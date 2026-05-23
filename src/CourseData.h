@@ -71,16 +71,27 @@ inline std::vector<HoleConfig> buildCourseData() {
     holes[8].windmillLocalPos = glm::vec3(0.0f, 0.0f, 0.5f);
 
     // Hole 13 — barrel obstacles
-    holes[12].obstacles.push_back({"Barrel", glm::vec3(-1.0f, 0.35f, 0.0f),
-                                   glm::vec3(1.0f), 0.0f});
-    holes[12].obstacles.push_back({"Barrel", glm::vec3( 1.0f, 0.35f, 0.0f),
-                                   glm::vec3(1.0f), 45.0f});
+    {
+        HoleConfig::ObstacleEntry e1;
+        e1.type = "Barrel"; e1.localPos = glm::vec3(-1.0f, 0.35f, 0.0f);
+        e1.scale = glm::vec3(1.0f); e1.rotation = 0.0f;
+        holes[12].obstacles.push_back(e1);
+
+        HoleConfig::ObstacleEntry e2;
+        e2.type = "Barrel"; e2.localPos = glm::vec3(1.0f, 0.35f, 0.0f);
+        e2.scale = glm::vec3(1.0f); e2.rotation = 45.0f;
+        holes[12].obstacles.push_back(e2);
+    }
 
     // Hole 18 — finishing hole, par 4, has tunnel flag
     holes[17].par       = 4;
     holes[17].hasTunnel = true;
-    holes[17].decor.push_back({"FlagPole", glm::vec3(0.0f, 0.0f, -2.5f),
-                               glm::vec3(1.0f), 0.0f});
+    {
+        HoleConfig::ObstacleEntry e;
+        e.type = "FlagPole"; e.localPos = glm::vec3(0.0f, 0.0f, -2.5f);
+        e.scale = glm::vec3(1.0f); e.rotation = 0.0f;
+        holes[17].decor.push_back(e);
+    }
 
     return holes;
 }

@@ -13,7 +13,8 @@ static const float SPEED_MAX    = 80.0f;
 static const float SPOTLIGHT_CUTOFF = 15.0f;  // inner cone, degrees
 
 Camera::Camera(glm::vec3 startPosition)
-    : position(startPosition)
+    : spotlightOn(false)
+    , position(startPosition)
     , front(0.0f, 0.0f, -1.0f)
     , up(0.0f, 1.0f, 0.0f)
     , right(1.0f, 0.0f, 0.0f)
@@ -23,7 +24,6 @@ Camera::Camera(glm::vec3 startPosition)
     , targetVelocity(0.0f)
     , moveSpeed(15.0f)
     , mouseSensitivity(0.1f)
-    , spotlightOn(false)
     , fKeyWasPressed(false)
 {
     updateVectors();
