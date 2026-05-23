@@ -1,5 +1,5 @@
 CXX      = g++
-CXXFLAGS = -std=c++11 -Wall -Wextra -O2 -Isrc
+CXXFLAGS = -std=c++11 -Wall -Wextra -O2 -Isrc -Ivendor
 LDFLAGS  = -lGL -lGLEW -lglfw -lm
 
 TARGET  = golf
