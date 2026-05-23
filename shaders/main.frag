@@ -3,31 +3,142 @@
 in vec3 FragPos;
 in vec3 Normal;
 in vec2 TexCoord;
+in vec4 FragPosLightSpace;
 
 out vec4 FragColor;
 
-uniform vec3 objectColor;
-uniform vec3 lightPos;
+// ---- Material ---------------------------------------------------------------
+uniform vec3      objectColor;
+uniform sampler2D objectTexture;
+uniform bool      useTexture;
+
+// ---- Shadow -----------------------------------------------------------------
+uniform sampler2D shadowMap;    // bound to texture unit 1
+
+// ---- Directional light (sun / moon) ----------------------------------------
+uniform vec3 dirLightDirection; // direction the light travels (toward scene, normalised)
+uniform vec3 dirLightColor;
+
+// ---- Point lights (up to 8 pole lights) ------------------------------------
+uniform vec3 pointLightPositions[8];
+uniform vec3 pointLightColor;
+uniform int  numPointLights;
+
+// ---- Drone spotlight --------------------------------------------------------
+uniform bool  spotlightOn;
+uniform vec3  spotlightPos;
+uniform vec3  spotlightDir;
+uniform float spotlightCutoff;       // inner cone, degrees
+uniform float spotlightOuterCutoff;  // outer cone, degrees
+
+// ---- Mode -------------------------------------------------------------------
+uniform bool isNight;
 uniform vec3 viewPos;
 
+// ---- Shadow: PCF 3×3 kernel -------------------------------------------------
+float calcShadow(vec4 fragPosLS, vec3 norm, vec3 toLight) {
+    vec3 proj = fragPosLS.xyz / fragPosLS.w;
+    proj = proj * 0.5 + 0.5;
+
+    // Fragments beyond the far plane of the shadow frustum are unoccluded
+    if (proj.z > 1.0) return 0.0;
+
+    float bias    = max(0.05 * (1.0 - dot(norm, toLight)), 0.005);
+    float shadow  = 0.0;
+    vec2  texel   = vec2(1.0 / 2048.0);
+
+    for (int x = -1; x <= 1; ++x) {
+        for (int y = -1; y <= 1; ++y) {
+            float closest = texture(shadowMap,
+                                    proj.xy + vec2(float(x), float(y)) * texel).r;
+            shadow += (proj.z - bias > closest) ? 1.0 : 0.0;
+        }
+    }
+    return shadow / 9.0;
+}
+
+// ---- Directional light ------------------------------------------------------
+vec3 calcDirLight(vec3 norm, vec3 viewDir, vec3 base, float shadow) {
+    vec3 toLight  = normalize(-dirLightDirection);
+    float diff    = max(dot(norm, toLight), 0.0);
+    vec3 halfV    = normalize(toLight + viewDir);
+    float spec    = pow(max(dot(norm, halfV), 0.0), 64.0);
+
+    float ambStr  = isNight ? 0.06 : 0.18;
+    float diffStr = isNight ? 0.35 : 0.75;
+    float specStr = isNight ? 0.05 : 0.35;
+
+    vec3 ambient  = ambStr  * dirLightColor * base;
+    vec3 diffuse  = diffStr * diff * dirLightColor * base;
+    vec3 specular = specStr * spec * dirLightColor;
+
+    // Shadow attenuates diffuse + specular only; ambient stays
+    return ambient + (1.0 - shadow) * (diffuse + specular);
+}
+
+// ---- Point light (with quadratic attenuation) --------------------------------
+vec3 calcPointLight(vec3 lPos, vec3 norm, vec3 viewDir, vec3 base) {
+    vec3  toLight = normalize(lPos - FragPos);
+    float diff    = max(dot(norm, toLight), 0.0);
+    vec3  halfV   = normalize(toLight + viewDir);
+    float spec    = pow(max(dot(norm, halfV), 0.0), 32.0);
+
+    float d   = length(lPos - FragPos);
+    float att = 1.0 / (1.0 + 0.09 * d + 0.032 * d * d);
+
+    vec3 ambient  = 0.03  * pointLightColor * base;
+    vec3 diffuse  = 0.80  * diff * pointLightColor * base;
+    vec3 specular = 0.25  * spec * pointLightColor;
+
+    return (ambient + diffuse + specular) * att;
+}
+
+// ---- Drone spotlight --------------------------------------------------------
+vec3 calcSpotlight(vec3 norm, vec3 viewDir, vec3 base) {
+    vec3  toLight   = normalize(spotlightPos - FragPos);
+    float theta     = dot(toLight, normalize(-spotlightDir));
+    float innerCos  = cos(radians(spotlightCutoff));
+    float outerCos  = cos(radians(spotlightOuterCutoff));
+    float intensity = smoothstep(outerCos, innerCos, theta);
+
+    if (intensity <= 0.0) return vec3(0.0);
+
+    float diff   = max(dot(norm, toLight), 0.0);
+    vec3  halfV  = normalize(toLight + viewDir);
+    float spec   = pow(max(dot(norm, halfV), 0.0), 64.0);
+
+    float d   = length(spotlightPos - FragPos);
+    float att = 1.0 / (1.0 + 0.007 * d + 0.002 * d * d);
+
+    vec3 diffuse  = diff * base;
+    vec3 specular = 0.6 * spec * vec3(1.0);
+
+    return (diffuse + specular) * att * intensity;
+}
+
+// ---- Main -------------------------------------------------------------------
 void main() {
-    // Ambient
-    float ambientStrength = 0.15;
-    vec3 ambient = ambientStrength * vec3(1.0);
+    vec3 base = useTexture
+        ? texture(objectTexture, TexCoord).rgb * objectColor
+        : objectColor;
 
-    // Diffuse
-    vec3 norm     = normalize(Normal);
-    vec3 lightDir = normalize(lightPos - FragPos);
-    float diff    = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse  = diff * vec3(1.0);
+    vec3 norm    = normalize(Normal);
+    vec3 viewDir = normalize(viewPos - FragPos);
+    vec3 toLight = normalize(-dirLightDirection);
 
-    // Specular (Phong)
-    float specularStrength = 0.5;
-    vec3 viewDir    = normalize(viewPos - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);
-    float spec      = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
-    vec3 specular   = specularStrength * spec * vec3(1.0);
+    float shadow = calcShadow(FragPosLightSpace, norm, toLight);
 
-    vec3 result = (ambient + diffuse + specular) * objectColor;
+    vec3 result = calcDirLight(norm, viewDir, base, shadow);
+
+    // Point lights only active at night
+    if (isNight) {
+        for (int i = 0; i < numPointLights; ++i)
+            result += calcPointLight(pointLightPositions[i], norm, viewDir, base);
+    }
+
+    // Drone spotlight
+    if (spotlightOn)
+        result += calcSpotlight(norm, viewDir, base);
+
     FragColor = vec4(result, 1.0);
 }

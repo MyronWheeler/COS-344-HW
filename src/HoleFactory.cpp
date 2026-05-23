@@ -131,7 +131,7 @@ void HoleNode::draw(Shader &shader) {
         GLuint waterTex = TextureLoader::load("textures/water_normal.png");
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, waterTex);
-        shader.setInt("diffuseTex", 0);
+        shader.setInt("objectTexture", 0);
         shader.setVec3("objectColor", glm::vec3(0.1f, 0.35f, 0.5f));
         for (auto &seg : streamSegments) {
             shader.setMat4("model", worldTransform * seg.second);
@@ -151,7 +151,7 @@ void HoleNode::draw(Shader &shader) {
         GLuint woodTex = TextureLoader::load("textures/wood.png");
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, woodTex);
-        shader.setInt("diffuseTex", 0);
+        shader.setInt("objectTexture", 0);
         shader.setVec3("objectColor", glm::vec3(0.6f, 0.4f, 0.2f));
         shader.setMat4("model", worldTransform * bridgeTransform);
         bridge->draw();
