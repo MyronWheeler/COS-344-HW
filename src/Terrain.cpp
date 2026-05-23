@@ -157,11 +157,13 @@ void Terrain::draw(Shader &shader, glm::mat4 worldTransform) {
     shader.setVec3("objectColor", glm::vec3(0.13f, 0.55f, 0.13f));
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, TextureLoader::load("textures/grass.png"));
-    shader.setInt("diffuseTex", 0);
+    shader.setInt("objectTexture", 0);
+    shader.setInt("useTexture", 1);
     fairway.draw();
 
     // Surround — gravel / rough
     shader.setVec3("objectColor", glm::vec3(0.55f, 0.50f, 0.40f));
     glBindTexture(GL_TEXTURE_2D, TextureLoader::load("textures/gravel.png"));
     surround.draw();
+    shader.setInt("useTexture", 0);
 }
