@@ -25,8 +25,9 @@ static const unsigned int CUBE_IDX[] = {
 };
 
 static void buildFacePaths(const std::string &prefix, std::string out[6]) {
-    // order: right, left, top, bottom, front, back
-    const char *faces[6] = {"right","left","top","bottom","front","back"};
+    // OpenGL cubemap face order: +X (Right), -X (Left), +Y (Top), -Y (Bottom), +Z (Back), -Z (Front)
+    // We swapped "back" and "front" in this array so they map to +Z and -Z correctly
+    const char *faces[6] = {"right", "left", "top", "bottom", "back", "front"};
     for (int i = 0; i < 6; ++i)
         out[i] = prefix + faces[i] + ".png";
 }
@@ -69,10 +70,16 @@ void Skybox::setNight(bool night) {
 }
 
 void Skybox::draw(Shader &shader, glm::mat4 view, glm::mat4 projection) {
+    // Strip translation so the skybox stays centred on the camera
+    glm::mat4 skyView = glm::mat4(glm::mat3(view));
+
     glDepthFunc(GL_LEQUAL);
+    
+    // FIX: Disable Face Culling specifically for the skybox so all inside faces render!
+    glDisable(GL_CULL_FACE); 
 
     shader.use();
-    shader.setMat4("view",       view);  // translation stripped in skybox.vert
+    shader.setMat4("view",       skyView);
     shader.setMat4("projection", projection);
     shader.setInt("skybox", 0);
 
@@ -83,5 +90,7 @@ void Skybox::draw(Shader &shader, glm::mat4 view, glm::mat4 projection) {
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
     glBindVertexArray(0);
 
+    // Restore Face Culling and depth testing for the rest of the golf course
+    glEnable(GL_CULL_FACE); 
     glDepthFunc(GL_LESS);
 }
