@@ -6,16 +6,15 @@
 #include <GL/glew.h>
 #include <iostream>
 
-// Fixed-size linear-search cache — avoids <unordered_map>
 static const int MAX_CACHE = 128;
 struct TexEntry { std::string path; GLuint id; };
 static TexEntry g_cache[MAX_CACHE];
-static int      g_cacheSize = 0;
+static int g_cacheSize = 0;
 
 GLuint TextureLoader::load(const std::string &path) {
-    for (int i = 0; i < g_cacheSize; ++i)
+    for (int i = 0; i < g_cacheSize; ++i) {
         if (g_cache[i].path == path) return g_cache[i].id;
-
+    }
     stbi_set_flip_vertically_on_load(true);
 
     int w, h, channels;
@@ -34,11 +33,10 @@ GLuint TextureLoader::load(const std::string &path) {
         GLenum fmt = (channels == 4) ? GL_RGBA : (channels == 3) ? GL_RGB : GL_RED;
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_2D, id);
-        glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(fmt), w, h,
-                     0, fmt, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(fmt), w, h, 0, fmt, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,     GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,     GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         stbi_image_free(data);
@@ -63,14 +61,12 @@ GLuint TextureLoader::loadCubemap(const std::string paths[6]) {
         unsigned char *data = stbi_load(paths[i].c_str(), &w, &h, &channels, 0);
         if (data) {
             GLenum fmt = (channels == 4) ? GL_RGBA : GL_RGB;
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
-                         static_cast<GLint>(fmt), w, h, 0, fmt, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, static_cast<GLint>(fmt), w, h, 0, fmt, GL_UNSIGNED_BYTE, data);
             stbi_image_free(data);
         } else {
             std::cerr << "[TextureLoader] Cubemap face missing: " << paths[i] << "\n";
             unsigned char col[3] = {100, 149, 237};
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
-                         GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, col);
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, col);
         }
     }
 

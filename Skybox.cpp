@@ -5,34 +5,34 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-// Unit cube that fills clip space; we strip translation from the view matrix
+
 static const float CUBE_VERTS[] = {
-    -1, -1, -1,   1, -1, -1,   1,  1, -1,  -1,  1, -1,  // -Z
-    -1, -1,  1,   1, -1,  1,   1,  1,  1,  -1,  1,  1,  // +Z
-    -1,  1,  1,  -1,  1, -1,  -1, -1, -1,  -1, -1,  1,  // -X
-     1,  1,  1,   1,  1, -1,   1, -1, -1,   1, -1,  1,  // +X
-    -1, -1, -1,   1, -1, -1,   1, -1,  1,  -1, -1,  1,  // -Y
-    -1,  1, -1,   1,  1, -1,   1,  1,  1,  -1,  1,  1,  // +Y
+    -1, -1, -1,   1, -1, -1,   1,  1, -1,  -1,  1, -1,
+    -1, -1,  1,   1, -1,  1,   1,  1,  1,  -1,  1,  1,
+    -1,  1,  1,  -1,  1, -1,  -1, -1, -1,  -1, -1,  1,
+     1,  1,  1,   1,  1, -1,   1, -1, -1,   1, -1,  1,
+    -1, -1, -1,   1, -1, -1,   1, -1,  1,  -1, -1,  1,
+    -1,  1, -1,   1,  1, -1,   1,  1,  1,  -1,  1,  1,
 };
 
 static const unsigned int CUBE_IDX[] = {
-     0, 1, 2,  0, 2, 3,
-     4, 6, 5,  4, 7, 6,
-     8, 9,10,  8,10,11,
+    0, 1, 2,  0, 2, 3,
+    4, 6, 5,  4, 7, 6,
+    8, 9,10,  8,10,11,
     12,14,13, 12,15,14,
     16,17,18, 16,18,19,
     20,22,21, 20,23,22,
 };
 
 static void buildFacePaths(const std::string &prefix, std::string out[6]) {
-    // order: right, left, top, bottom, front, back
+
     const char *faces[6] = {"right","left","top","bottom","front","back"};
-    for (int i = 0; i < 6; ++i)
+    for (int i = 0; i < 6; ++i) {
         out[i] = prefix + faces[i] + ".png";
+    }
 }
 
 Skybox::Skybox() : isNight(false) {
-    // GPU buffers
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
@@ -53,7 +53,7 @@ Skybox::Skybox() : isNight(false) {
     buildFacePaths("textures/skybox_day_",   dayPaths);
     buildFacePaths("textures/skybox_night_", nightPaths);
 
-    cubemapDay   = TextureLoader::loadCubemap(dayPaths);
+    cubemapDay = TextureLoader::loadCubemap(dayPaths);
     cubemapNight = TextureLoader::loadCubemap(nightPaths);
 }
 
@@ -72,7 +72,7 @@ void Skybox::draw(Shader &shader, glm::mat4 view, glm::mat4 projection) {
     glDisable(GL_CULL_FACE);
 
     shader.use();
-    shader.setMat4("view",       view);  // translation stripped in skybox.vert
+    shader.setMat4("view", view);
     shader.setMat4("projection", projection);
     shader.setInt("skybox", 0);
 

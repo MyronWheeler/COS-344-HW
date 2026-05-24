@@ -5,10 +5,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
 
-// Build one stream-segment plane between two waypoints
 static StreamSegment makeStreamSegment(glm::vec2 a, glm::vec2 b, float width) {
     glm::vec2 dir = b - a;
-    float     len = glm::length(dir);
+    float len = glm::length(dir);
     if (len < 0.001f) len = 0.001f;
 
     std::vector<Vertex> verts = {
@@ -33,9 +32,7 @@ HoleNode HoleFactory::build(const HoleConfig &cfg) {
     HoleNode node;
 
     node.worldTransform = glm::translate(glm::mat4(1.0f), cfg.position);
-    node.worldTransform = glm::rotate(node.worldTransform,
-                                      glm::radians(cfg.rotation),
-                                      glm::vec3(0, 1, 0));
+    node.worldTransform = glm::rotate(node.worldTransform, glm::radians(cfg.rotation), glm::vec3(0, 1, 0));
 
     if (cfg.boundaryPoints.size() >= 3) {
         std::vector<float> elevs = cfg.elevations;
@@ -47,19 +44,17 @@ HoleNode HoleFactory::build(const HoleConfig &cfg) {
     // water strip is not rendered across the course.
 
     if (cfg.hasBridge && cfg.streamPath.size() >= 2) {
-        node.hasBridge      = true;
-        node.bridge         = new Mesh(Mesh::createBox(2.0f, 0.1f, 1.6f));
-        glm::vec2 mid       = (cfg.streamPath[0] + cfg.streamPath[1]) * 0.5f;
-        glm::vec2 dir       = cfg.streamPath[1] - cfg.streamPath[0];
-        float angle         = std::atan2(dir.x, dir.y);
-        node.bridgeTransform = glm::rotate(
-                                 glm::translate(glm::mat4(1.0f), glm::vec3(mid.x, 0.06f, mid.y)),
-                                 angle, glm::vec3(0, 1, 0));
+        node.hasBridge = true;
+        node.bridge = new Mesh(Mesh::createBox(2.0f, 0.1f, 1.6f));
+        glm::vec2 mid = (cfg.streamPath[0] + cfg.streamPath[1]) * 0.5f;
+        glm::vec2 dir = cfg.streamPath[1] - cfg.streamPath[0];
+        float angle  = std::atan2(dir.x, dir.y);
+        node.bridgeTransform = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(mid.x, 0.06f, mid.y)), angle, glm::vec3(0, 1, 0));
     }
 
     if (cfg.hasWindmill) {
-        node.hasWindmill      = true;
-        node.windmill         = new Windmill();
+        node.hasWindmill = true;
+        node.windmill = new Windmill();
         node.windmillTransform = glm::translate(glm::mat4(1.0f), cfg.windmillLocalPos);
     }
 
@@ -73,8 +68,10 @@ HoleNode HoleFactory::build(const HoleConfig &cfg) {
 
     for (const auto &e : cfg.obstacles) {
         HoleNode::PlacedObject po;
-        po.type       = e.type;
+        po.type = e.type;
         glm::vec3 pos = e.localPos;
+        if (e.type == "Bunker") pos.y = 0.02f;
+        po.transform = glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), pos), glm::radians(e.rotation), glm::vec3(0,1,0)), e.scale);
         if (e.type == "Bunker") {
             // Place bunker at the centroid of the hole boundary (green center)
             // and raise it slightly to sit on top of the green surface.
@@ -94,18 +91,13 @@ HoleNode HoleFactory::build(const HoleConfig &cfg) {
 
     for (const auto &e : cfg.decor) {
         HoleNode::PlacedObject po;
-        po.type      = e.type;
-        po.transform = glm::scale(
-                         glm::rotate(
-                           glm::translate(glm::mat4(1.0f), e.localPos),
-                           glm::radians(e.rotation), glm::vec3(0,1,0)),
-                         e.scale);
+        po.type = e.type;
+        po.transform = glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), e.localPos), glm::radians(e.rotation), glm::vec3(0,1,0)), e.scale);
         node.decor.push_back(std::move(po));
 
         if (e.type == "FlagPole") {
             HoleNode::HoleCup cup;
-            cup.transform = glm::translate(glm::mat4(1.0f),
-                              glm::vec3(e.localPos.x, 0.08f, e.localPos.z));
+            cup.transform = glm::translate(glm::mat4(1.0f), glm::vec3(e.localPos.x, 0.08f, e.localPos.z));
             node.holeCups.push_back(cup);
         }
     }
@@ -132,12 +124,11 @@ void HoleNode::draw(Shader &shader, float spinAngle) {
     if (hasWindmill && windmill)
         windmill->draw(shader, worldTransform * windmillTransform, spinAngle);
 
-    // Draw placed obstacles and decor
     {
-        static Mesh s_rock     = Mesh::createSphere(0.5f, 12);
-        static Mesh s_barrel   = Mesh::createCylinder(0.35f, 0.7f, 16);
-        static Mesh s_bunker   = Mesh::createCylinder(0.9f, 0.04f, 16);
-        static Mesh s_plank    = Mesh::createBox(2.0f, 0.08f, 0.6f);
+        static Mesh s_rock = Mesh::createSphere(0.5f, 12);
+        static Mesh s_barrel = Mesh::createCylinder(0.35f, 0.7f, 16);
+        static Mesh s_bunker = Mesh::createCylinder(0.9f, 0.04f, 16);
+        static Mesh s_plank = Mesh::createBox(2.0f, 0.08f, 0.6f);
         static Mesh s_fallback = Mesh::createBox(0.5f, 0.5f, 0.5f);
         static FlagPole s_flag;
 
@@ -189,7 +180,6 @@ void HoleNode::draw(Shader &shader, float spinAngle) {
         }
     }
 
-    // Black hole cups — one flat disk per FlagPole decor entry
     {
         static Mesh cupMesh = Mesh::createCylinder(0.25f, 0.02f, 16);
         shader.setInt("useTexture", 0);
