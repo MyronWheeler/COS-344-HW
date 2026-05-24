@@ -7,14 +7,21 @@
 class Shader;
 
 class Terrain {
-    public:
-        Terrain(const std::vector<glm::vec2> &boundary, const std::vector<float>     &elevations);
-        void draw(Shader &shader, glm::mat4 worldTransform);
+public:
+    // boundary: 2-D polygon in local XZ space
+    // elevations: Y value for each boundary vertex (same length as boundary)
+    Terrain(const std::vector<glm::vec2> &boundary,
+            const std::vector<float>     &elevations);
 
-    private:
-        Mesh fairway;
-        Mesh surround;
+    void draw(Shader &shader, glm::mat4 worldTransform);
 
-        static Mesh buildFairway(const std::vector<glm::vec2> &boundary, const std::vector<float> &elevations);
-        static Mesh buildSurround(const std::vector<glm::vec2> &boundary, float minElevation);
+private:
+    Mesh fairway;   // tessellated polygon at given elevations
+    Mesh surround;  // gravel skirt — boundary offset outward, flat at min elevation
+
+    static Mesh buildFairway(const std::vector<glm::vec2> &boundary,
+                              const std::vector<float>     &elevations);
+
+    static Mesh buildSurround(const std::vector<glm::vec2> &boundary,
+                               float minElevation);
 };

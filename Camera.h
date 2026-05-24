@@ -4,36 +4,40 @@
 #include <GLFW/glfw3.h>
 
 class Camera {
-    public:
-        Camera(glm::vec3 startPosition);
+public:
+    Camera(glm::vec3 startPosition);
 
-        void processKeyboard(GLFWwindow *window, float deltaTime);
-        void processMouseScroll(float yoffset);
+    void processKeyboard(GLFWwindow *window, float deltaTime);
+    void processMouseScroll(float yoffset);
 
-        glm::mat4 getViewMatrix() const;
-        glm::mat4 getProjectionMatrix(float aspectRatio) const;
-        glm::vec3 getPosition() const;
-        glm::vec3 getFront() const;
+    glm::mat4 getViewMatrix() const;
+    glm::mat4 getProjectionMatrix(float aspectRatio) const;
+    glm::vec3 getPosition() const;
+    glm::vec3 getFront() const;
 
-        bool spotlightOn;
-        glm::vec3 getSpotlightPosition() const;
-        glm::vec3 getSpotlightDirection() const;
-        float getCutoffAngle() const;
-    private:
-        void updateVectors();
+    // Spotlight
+    bool      spotlightOn;
+    glm::vec3 getSpotlightPosition() const;
+    glm::vec3 getSpotlightDirection() const;
+    float     getCutoffAngle() const;   // inner cutoff, degrees
 
-        glm::vec3 position;
-        glm::vec3 front;
-        glm::vec3 up;
-        glm::vec3 right;
+private:
+    void updateVectors();
 
-        float yaw;
-        float pitch;
+    glm::vec3 position;
+    glm::vec3 front;
+    glm::vec3 up;
+    glm::vec3 right;
 
-        glm::vec3 velocity;
-        glm::vec3 targetVelocity;
-        float moveSpeed;
-        float turnSpeed;
+    float yaw;          // degrees, -90 = looking down -Z
+    float pitch;        // degrees, clamped [-89, 89]
 
-        bool fKeyWasPressed;
+    // Smooth movement
+    glm::vec3 velocity;         // current world-space velocity
+    glm::vec3 targetVelocity;   // desired velocity this frame
+    float     moveSpeed;        // base speed, scroll-adjustable
+    float     turnSpeed;        // degrees/second for arrow-key look
+
+    // F key debounce
+    bool fKeyWasPressed;
 };
