@@ -46,7 +46,7 @@ void Camera::processKeyboard(GLFWwindow *window, float deltaTime) {
     velocity = glm::mix(velocity, targetVelocity, t);
     position += velocity * deltaTime;
 
-    // Arrow keys — rotate yaw / pitch at turnSpeed deg/s
+    
     float td = turnSpeed * deltaTime;
     bool looked = false;
     if (glfwGetKey(window, GLFW_KEY_LEFT)  == GLFW_PRESS) { yaw   -= td; looked = true; }

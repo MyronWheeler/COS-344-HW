@@ -7,43 +7,35 @@ in vec4 FragPosLightSpace;
 
 out vec4 FragColor;
 
-// ---- Material ---------------------------------------------------------------
 uniform vec3      objectColor;
 uniform float     objectAlpha;
 uniform sampler2D objectTexture;
 uniform int       useTexture;
 
-// ---- Shadow -----------------------------------------------------------------
-uniform int       useAlpha;     // 1 = apply objectAlpha (spotlight cone only)
+uniform int       useAlpha;     
 
-uniform sampler2D shadowMap;    // bound to texture unit 1
+uniform sampler2D shadowMap;    
 
-// ---- Directional light (sun / moon) ----------------------------------------
-uniform vec3 dirLightDirection; // direction the light travels (toward scene, normalised)
+uniform vec3 dirLightDirection; 
 uniform vec3 dirLightColor;
 
-// ---- Point lights (up to 8 pole lights) ------------------------------------
 uniform vec3 pointLightPositions[18];
 uniform vec3 pointLightColor;
 uniform int  numPointLights;
 
-// ---- Drone spotlight --------------------------------------------------------
 uniform bool  spotlightOn;
 uniform vec3  spotlightPos;
 uniform vec3  spotlightDir;
-uniform float spotlightCutoff;       // inner cone, degrees
-uniform float spotlightOuterCutoff;  // outer cone, degrees
+uniform float spotlightCutoff;       
+uniform float spotlightOuterCutoff;  
 
-// ---- Mode -------------------------------------------------------------------
 uniform bool isNight;
 uniform vec3 viewPos;
 
-// ---- Shadow: PCF 3×3 kernel -------------------------------------------------
 float calcShadow(vec4 fragPosLS, vec3 norm, vec3 toLight) {
     vec3 proj = fragPosLS.xyz / fragPosLS.w;
     proj = proj * 0.5 + 0.5;
 
-    // Fragments beyond the far plane of the shadow frustum are unoccluded
     if (proj.z > 1.0) return 0.0;
 
     float bias    = max(0.05 * (1.0 - dot(norm, toLight)), 0.005);
@@ -60,7 +52,6 @@ float calcShadow(vec4 fragPosLS, vec3 norm, vec3 toLight) {
     return shadow / 9.0;
 }
 
-// ---- Directional light ------------------------------------------------------
 vec3 calcDirLight(vec3 norm, vec3 viewDir, vec3 base, float shadow) {
     vec3 toLight  = normalize(-dirLightDirection);
     float diff    = max(dot(norm, toLight), 0.0);
@@ -75,11 +66,9 @@ vec3 calcDirLight(vec3 norm, vec3 viewDir, vec3 base, float shadow) {
     vec3 diffuse  = diffStr * diff * dirLightColor * base;
     vec3 specular = specStr * spec * dirLightColor;
 
-    // Shadow attenuates diffuse + specular only; ambient stays
     return ambient + (1.0 - shadow) * (diffuse + specular);
 }
 
-// ---- Point light (with quadratic attenuation) --------------------------------
 vec3 calcPointLight(vec3 lPos, vec3 norm, vec3 viewDir, vec3 base, vec3 lColor) {
     vec3  toLight = normalize(lPos - FragPos);
     float diff    = max(dot(norm, toLight), 0.0);
@@ -96,7 +85,6 @@ vec3 calcPointLight(vec3 lPos, vec3 norm, vec3 viewDir, vec3 base, vec3 lColor) 
     return (ambient + diffuse + specular) * att;
 }
 
-// ---- Drone spotlight --------------------------------------------------------
 vec3 calcSpotlight(vec3 norm, vec3 viewDir, vec3 base) {
     vec3  toLight   = normalize(spotlightPos - FragPos);
     float theta     = dot(toLight, normalize(-spotlightDir));
@@ -119,7 +107,6 @@ vec3 calcSpotlight(vec3 norm, vec3 viewDir, vec3 base) {
     return (diffuse + specular) * att * intensity;
 }
 
-// ---- Main -------------------------------------------------------------------
 void main() {
     vec3 base = (useTexture == 1)
         ? texture(objectTexture, TexCoord).rgb
@@ -134,13 +121,11 @@ void main() {
 
     vec3 result = calcDirLight(norm, viewDir, base, shadow);
 
-    // Point lights always contribute; 15% in day, full at night
     float lightScale = isNight ? 1.0 : 0.3;
     vec3  scaledPL   = pointLightColor * lightScale;
     for (int i = 0; i < numPointLights; ++i)
         result += calcPointLight(pointLightPositions[i], norm, viewDir, base, scaledPL);
 
-    // Drone spotlight
     if (spotlightOn)
         result += calcSpotlight(norm, viewDir, base);
 

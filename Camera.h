@@ -15,11 +15,11 @@ public:
     glm::vec3 getPosition() const;
     glm::vec3 getFront() const;
 
-    // Spotlight
+    
     bool      spotlightOn;
     glm::vec3 getSpotlightPosition() const;
     glm::vec3 getSpotlightDirection() const;
-    float     getCutoffAngle() const;   // inner cutoff, degrees
+    float     getCutoffAngle() const;   
 
 private:
     void updateVectors();
@@ -29,15 +29,15 @@ private:
     glm::vec3 up;
     glm::vec3 right;
 
-    float yaw;          // degrees, -90 = looking down -Z
-    float pitch;        // degrees, clamped [-89, 89]
+    float yaw;          
+    float pitch;        
 
-    // Smooth movement
-    glm::vec3 velocity;         // current world-space velocity
-    glm::vec3 targetVelocity;   // desired velocity this frame
-    float     moveSpeed;        // base speed, scroll-adjustable
-    float     turnSpeed;        // degrees/second for arrow-key look
+    
+    glm::vec3 velocity;         
+    glm::vec3 targetVelocity;   
+    float     moveSpeed;        
+    float     turnSpeed;        
 
-    // F key debounce
+    
     bool fKeyWasPressed;
 };

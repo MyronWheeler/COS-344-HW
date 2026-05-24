@@ -10,23 +10,23 @@
 
 class Shader;
 
-// Move-only pairing of a Mesh and its local transform — replaces std::pair
+
 struct StreamSegment {
-    Mesh      mesh;
+    Mesh mesh;
     glm::mat4 transform;
 
     StreamSegment(Mesh &&m, glm::mat4 t) : mesh(std::move(m)), transform(t) {}
-    StreamSegment(StreamSegment &&)                 = default;
-    StreamSegment &operator=(StreamSegment &&)      = default;
-    StreamSegment(const StreamSegment &)            = delete;
+    StreamSegment(StreamSegment &&)= default;
+    StreamSegment &operator=(StreamSegment &&)  = default;
+    StreamSegment(const StreamSegment &) = delete;
     StreamSegment &operator=(const StreamSegment &) = delete;
 };
 
 struct HoleNode {
     glm::mat4 worldTransform;
 
-    Terrain  *terrain  = nullptr;
-    Mesh     *bridge   = nullptr;
+    Terrain *terrain  = nullptr;
+    Mesh *bridge   = nullptr;
     Windmill *windmill = nullptr;
     glm::mat4 bridgeTransform;
     glm::mat4 windmillTransform;
@@ -53,7 +53,7 @@ struct HoleNode {
     HoleNode()  = default;
     ~HoleNode() { delete terrain; delete bridge; delete windmill; }
 
-    // Move constructor — transfers raw-pointer ownership and nulls the source
+    
     HoleNode(HoleNode &&o)
         : worldTransform(o.worldTransform)
         , terrain(o.terrain)
@@ -76,23 +76,23 @@ struct HoleNode {
     HoleNode &operator=(HoleNode &&o) {
         if (this != &o) {
             delete terrain; delete bridge; delete windmill;
-            worldTransform     = o.worldTransform;
-            terrain            = o.terrain;   o.terrain  = nullptr;
-            bridge             = o.bridge;    o.bridge   = nullptr;
-            windmill           = o.windmill;  o.windmill = nullptr;
-            bridgeTransform    = o.bridgeTransform;
+            worldTransform = o.worldTransform;
+            terrain = o.terrain; o.terrain  = nullptr;
+            bridge = o.bridge;    o.bridge   = nullptr;
+            windmill = o.windmill;  o.windmill = nullptr;
+            bridgeTransform = o.bridgeTransform;
             windmillTransform  = o.windmillTransform;
-            streamSegments     = std::move(o.streamSegments);
-            obstacles          = std::move(o.obstacles);
-            decor              = std::move(o.decor);
-            holeCups           = std::move(o.holeCups);
-            hasBridge          = o.hasBridge;
-            hasWindmill        = o.hasWindmill;
+            streamSegments = std::move(o.streamSegments);
+            obstacles = std::move(o.obstacles);
+            decor = std::move(o.decor);
+            holeCups = std::move(o.holeCups);
+            hasBridge = o.hasBridge;
+            hasWindmill = o.hasWindmill;
         }
         return *this;
     }
 
-    HoleNode(const HoleNode &)            = delete;
+    HoleNode(const HoleNode &) = delete;
     HoleNode &operator=(const HoleNode &) = delete;
 };
 

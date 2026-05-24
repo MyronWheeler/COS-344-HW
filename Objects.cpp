@@ -5,7 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-// Helper: bind texture to unit 0 and enable texture sampling
+
 static void bindTex(Shader &shader, GLuint tex) {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex);
@@ -13,7 +13,7 @@ static void bindTex(Shader &shader, GLuint tex) {
     shader.setInt("useTexture", 1);
 }
 
-// ---- Rock ------------------------------------------------------------------
+
 
 Rock::Rock(glm::vec3 scale)
     : mesh(Mesh::createSphere(0.5f, 16))
@@ -30,9 +30,9 @@ void Rock::draw(Shader &shader, glm::mat4 modelMatrix) {
     shader.setInt("useTexture", 0);
 }
 
-// ---- Barrel ----------------------------------------------------------------
 
-// Flat disk cap: just a cylinder of near-zero height subdivided enough to look solid
+
+
 static Mesh makeDisk(float radius) {
     return Mesh::createCylinder(radius, 0.02f, 24);
 }
@@ -53,23 +53,23 @@ void Barrel::draw(Shader &shader, glm::mat4 modelMatrix) {
     shader.use();
     bindTex(shader, texture);
 
-    // Body
+    
     shader.setMat4("model", base);
     body.draw();
 
-    // Top cap
+    
     glm::mat4 topM = glm::translate(base, glm::vec3(0.0f, 0.35f, 0.0f));
     shader.setMat4("model", topM);
     capTop.draw();
 
-    // Bottom cap
+    
     glm::mat4 botM = glm::translate(base, glm::vec3(0.0f, -0.35f, 0.0f));
     shader.setMat4("model", botM);
     capBot.draw();
     shader.setInt("useTexture", 0);
 }
 
-// ---- LogBarrier ------------------------------------------------------------
+
 
 LogBarrier::LogBarrier()
     : mesh(Mesh::createCylinder(0.2f, 3.0f, 16))
@@ -85,9 +85,9 @@ void LogBarrier::draw(Shader &shader, glm::mat4 modelMatrix) {
     shader.setInt("useTexture", 0);
 }
 
-// ---- Billboard -------------------------------------------------------------
 
-// A single unit quad in XY plane centred at origin
+
+
 static Mesh makeQuad() {
     std::vector<Vertex> v = {
         {{-0.5f, -0.5f, 0.0f}, {0,0,1}, {0,0}},
@@ -110,7 +110,7 @@ void Billboard::updateCamera(const glm::vec3 &camPos) {
 }
 
 void Billboard::draw(Shader &shader, glm::mat4 modelMatrix) {
-    // Extract translation from model matrix; build a billboard rotation toward camera
+    
     glm::vec3 worldPos = glm::vec3(modelMatrix[3]);
     glm::vec3 toCamera = glm::normalize(camPosition - worldPos);
     toCamera.y = 0.0f;
@@ -121,29 +121,27 @@ void Billboard::draw(Shader &shader, glm::mat4 modelMatrix) {
     glm::vec3 right = glm::normalize(glm::cross(up, toCamera));
 
     glm::mat4 rot(1.0f);
-    rot[0] = glm::vec4(right,   0.0f);
-    rot[1] = glm::vec4(up,      0.0f);
+    rot[0] = glm::vec4(right,0.0f);
+    rot[1] = glm::vec4(up,0.0f);
     rot[2] = glm::vec4(toCamera,0.0f);
 
-    glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(modelMatrix[0][0],
-                                                              modelMatrix[1][1],
-                                                              modelMatrix[2][2]));
+    glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(modelMatrix[0][0],modelMatrix[1][1],modelMatrix[2][2]));
     glm::mat4 trans = glm::translate(glm::mat4(1.0f), worldPos);
-    glm::mat4 m     = trans * rot * scale;
+    glm::mat4 m = trans * rot * scale;
 
     shader.use();
     shader.setMat4("model", m);
     bindTex(shader, texture);
     quad.draw();
 
-    // Second quad rotated 90° to form a cross
+    
     glm::mat4 m2 = glm::rotate(m, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     shader.setMat4("model", m2);
     quad.draw();
     shader.setInt("useTexture", 0);
 }
 
-// ---- FlagPole --------------------------------------------------------------
+
 
 FlagPole::FlagPole(glm::vec3 flagColor)
     : pole(Mesh::createCylinder(0.03f, 1.2f, 8))
@@ -154,12 +152,12 @@ FlagPole::FlagPole(glm::vec3 flagColor)
 void FlagPole::draw(Shader &shader, glm::mat4 modelMatrix) {
     shader.use();
 
-    // Pole: metal texture
+    
     bindTex(shader, TextureLoader::load("textures/metal.png"));
     shader.setMat4("model", modelMatrix);
     pole.draw();
 
-    // Flag: flag texture (white fallback if file missing)
+    
     bindTex(shader, TextureLoader::load("textures/flag.png"));
     glm::mat4 flagM = glm::translate(modelMatrix, glm::vec3(0.15f, 0.5f, 0.0f));
     flagM = glm::scale(flagM, glm::vec3(0.5f, 0.3f, 1.0f));
@@ -170,7 +168,7 @@ void FlagPole::draw(Shader &shader, glm::mat4 modelMatrix) {
     shader.setVec3("objectColor", glm::vec3(1.0f));
 }
 
-// ---- Bridge ----------------------------------------------------------------
+
 
 Bridge::Bridge(float width, float length, float thickness)
     : mesh(Mesh::createBox(width, thickness, length))
@@ -185,7 +183,7 @@ void Bridge::draw(Shader &shader, glm::mat4 modelMatrix) {
     shader.setInt("useTexture", 0);
 }
 
-// ---- LightPole -------------------------------------------------------------
+
 
 LightPole::LightPole()
     : pole(Mesh::createCylinder(0.06f, 6.0f, 8))
@@ -199,7 +197,7 @@ void LightPole::draw(Shader &shader, glm::mat4 modelMatrix) {
     bindTex(shader, TextureLoader::load("textures/metal.png"));
     pole.draw();
 
-    // Cap sits at top, slightly angled
+    
     glm::mat4 capM = glm::translate(modelMatrix, glm::vec3(0.0f, 3.1f, 0.1f));
     capM = glm::rotate(capM, glm::radians(-15.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     shader.setMat4("model", capM);
@@ -207,7 +205,7 @@ void LightPole::draw(Shader &shader, glm::mat4 modelMatrix) {
     shader.setInt("useTexture", 0);
 }
 
-// ---- Windmill --------------------------------------------------------------
+
 
 Windmill::Windmill()
     : bodyTop(Mesh::createBox(0.70f, 1.00f, 0.70f))
@@ -226,7 +224,7 @@ void Windmill::draw(Shader &shader, glm::mat4 modelMatrix, float spinAngle) {
     shader.use();
     bindTex(shader, TextureLoader::load("textures/wood.png"));
 
-    // Main tower body, matching the Prac 3 stacked-box windmill shape.
+    
     glm::mat4 bodyBotM = glm::translate(modelMatrix, glm::vec3(0.0f, -0.50f, 0.0f));
     shader.setMat4("model", bodyBotM);
     bodyBot.draw();
@@ -239,7 +237,7 @@ void Windmill::draw(Shader &shader, glm::mat4 modelMatrix, float spinAngle) {
     shader.setMat4("model", bodyTopM);
     bodyTop.draw();
 
-    // Base pillars and lintel.
+    
     glm::mat4 leftPillar = glm::translate(modelMatrix, glm::vec3(-0.27f, -2.00f, 0.0f));
     shader.setMat4("model", leftPillar);
     baseLeft.draw();
@@ -252,12 +250,12 @@ void Windmill::draw(Shader &shader, glm::mat4 modelMatrix, float spinAngle) {
     shader.setMat4("model", lintel);
     baseLintel.draw();
 
-    // Roof.
+    
     glm::mat4 roofM = glm::translate(modelMatrix, glm::vec3(0.0f, 2.00f, 0.0f));
     shader.setMat4("model", roofM);
     roof.draw();
 
-    // Axle and hub.
+    
     glm::mat4 axleM = glm::translate(modelMatrix, glm::vec3(0.0f, 1.50f, 0.42f));
     shader.setMat4("model", axleM);
     bindTex(shader, TextureLoader::load("textures/metal.png"));
@@ -268,7 +266,7 @@ void Windmill::draw(Shader &shader, glm::mat4 modelMatrix, float spinAngle) {
     bindTex(shader, TextureLoader::load("textures/metal.png"));
     hub.draw();
 
-    // Four blades, rotated by the supplied spin angle.
+    
     const float PI = 3.14159265f;
     const float bladeAngles[4] = {PI * 0.25f, PI * 0.75f, PI * 1.25f, PI * 1.75f};
     for (int i = 0; i < 4; ++i) {

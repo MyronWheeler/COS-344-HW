@@ -1,6 +1,6 @@
 #pragma once
 
-#include "HoleConfig.h"
+#include "../HoleConfig.h"
 #include <cmath>
 #include <vector>
 
@@ -48,9 +48,9 @@ static inline std::vector<float> lShapeElevs(float bot, float top) {
     return {bot, bot, bot, bot, top, top, top, bot};
 }
 
-// Per-hole obstacle entry builder — shared across all hole headers.
-// Defined here (once) because all HoleXX.h files are included into the
-// same translation unit via CourseData.h.
+
+
+
 static inline HoleConfig::ObstacleEntry obs(
     const std::string& type,
     float x, float y, float z,

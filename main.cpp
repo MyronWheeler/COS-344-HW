@@ -21,7 +21,7 @@
 #include "ShadowMap.h"
 #include "Drone.h"
 
-// ---- Course decoration data ------------------------------------------------
+
 
 struct DecorInstance {
     std::string type;
@@ -30,21 +30,21 @@ struct DecorInstance {
     float       rotation;
 };
 
-// ---- World stream waypoints ------------------------------------------------
+
 
 static const glm::vec3 STREAM_WAYPOINTS[] = {
-    // Entry from left, winds between row 1 (Z≈-29) and row 2 (Z≈1)
+    
     {-55.0f,  0.08f, -15.0f},
     {-38.0f,  0.08f, -14.0f},
     {-26.0f,  0.08f, -16.0f},
     {-14.0f,  0.08f, -13.0f},
     { -4.0f,  0.08f, -15.0f},
     {  6.0f,  0.08f, -14.0f},
-    // Curves through the mid gap
+    
     { 10.0f,  0.08f,  -8.0f},
     {  8.0f,  0.08f,   0.0f},
     {  6.0f,  0.08f,   8.0f},
-    // Winds between row 2 and row 3 (Z≈29)
+    
     {  4.0f,  0.08f,  14.0f},
     { -6.0f,  0.08f,  15.0f},
     {-16.0f,  0.08f,  14.0f},
@@ -54,15 +54,15 @@ static const glm::vec3 STREAM_WAYPOINTS[] = {
 };
 static const int NUM_STREAM_WAYPOINTS = 15;
 
-// ---- globals ---------------------------------------------------------------
+
 
 static Camera *g_camera      = nullptr;
 static bool    g_isNight     = false;
 static bool    g_nWasPressed = false;
 
-// ---- GLFW callbacks --------------------------------------------------------
 
-static void keyCallback(GLFWwindow *window, int key, int /*sc*/, int action, int /*mod*/) {
+
+static void keyCallback(GLFWwindow *window, int key, int , int action, int ) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GLFW_TRUE);
 
@@ -73,18 +73,18 @@ static void keyCallback(GLFWwindow *window, int key, int /*sc*/, int action, int
     }
 }
 
-static void scrollCallback(GLFWwindow * /*w*/, double /*x*/, double y) {
+static void scrollCallback(GLFWwindow * , double , double y) {
     if (g_camera) g_camera->processMouseScroll(static_cast<float>(y));
 }
 
-static void framebufferSizeCallback(GLFWwindow * /*w*/, int w, int h) {
+static void framebufferSizeCallback(GLFWwindow * , int w, int h) {
     glViewport(0, 0, w, h);
 }
 
-// ---- Light parameters for day / night modes --------------------------------
+
 
 struct LightMode {
-    glm::vec3 dir;   // direction light travels (toward scene, normalised)
+    glm::vec3 dir;   
     glm::vec3 color;
 };
 
@@ -98,11 +98,11 @@ static LightMode nightLight() {
              glm::vec3(0.15f, 0.20f, 0.35f) };
 }
 
-// ---- Pole-light positions: ring around the 68×47 m course ------------------
+
 
 static const int NUM_POLE_LIGHTS = 18;
 
-// XZ matches each LightPole in COURSE_DECOR exactly; Y=5 at pole-top
+
 static const glm::vec3 POLE_LIGHT_POSITIONS[NUM_POLE_LIGHTS] = {
     {-52.0f, 5.0f, -28.0f},
     { 52.0f, 5.0f, -28.0f},
@@ -124,7 +124,7 @@ static const glm::vec3 POLE_LIGHT_POSITIONS[NUM_POLE_LIGHTS] = {
     {  0.0f, 5.0f,  14.0f},
 };
 
-// ---- Set all frame-constant uniforms on the main shader --------------------
+
 
 static void setMainShaderUniforms(Shader          &shader,
                                   const glm::mat4 &view,
@@ -138,8 +138,8 @@ static void setMainShaderUniforms(Shader          &shader,
     shader.setMat4 ("view",             view);
     shader.setMat4 ("projection",       projection);
     shader.setMat4 ("lightSpaceMatrix", lsm);
-    shader.setInt  ("shadowMap",        1);   // unit 1
-    shader.setInt  ("objectTexture",    0);   // unit 0
+    shader.setInt  ("shadowMap",        1);   
+    shader.setInt  ("objectTexture",    0);   
     shader.setInt  ("useTexture",       0);
     shader.setInt  ("useAlpha",         0);
     shader.setFloat("objectAlpha",      1.0f);
@@ -149,7 +149,7 @@ static void setMainShaderUniforms(Shader          &shader,
     shader.setVec3("viewPos",           camera.getPosition());
     shader.setInt ("isNight",           isNight ? 1 : 0);
 
-    // Always warm orange-white; shader scales by 0.3 in day, 1.0 at night
+    
     shader.setVec3("pointLightColor", glm::vec3(1.0f, 0.90f, 0.65f));
     shader.setInt ("numPointLights",  NUM_POLE_LIGHTS);
     for (int i = 0; i < NUM_POLE_LIGHTS; ++i) {
@@ -165,7 +165,7 @@ static void setMainShaderUniforms(Shader          &shader,
     shader.setFloat("spotlightOuterCutoff", camera.getCutoffAngle() + 5.0f);
 }
 
-// ---- main ------------------------------------------------------------------
+
 
 int main() {
     if (!glfwInit()) { std::cerr << "GLFW init failed\n"; return EXIT_FAILURE; }
@@ -198,7 +198,7 @@ int main() {
     glEnable(GL_CULL_FACE);
     glViewport(0, 0, 1280, 720);
 
-    // ---- Camera / drone controller -----------------------------------------
+    
     Camera camera(glm::vec3(0.0f, 25.0f, 40.0f));
     g_camera = &camera;
 
@@ -214,16 +214,16 @@ int main() {
         "  ESC           quit\n"
         "======================================\n\n";
 
-    // ---- Shaders -----------------------------------------------------------
+    
     Shader mainShader  ("shaders/main.vert",   "shaders/main.frag");
     Shader shadowShader("shaders/shadow.vert", "shaders/shadow.frag");
     Shader skyShader   ("shaders/skybox.vert", "shaders/skybox.frag");
     Shader waterShader ("shaders/water.vert",  "shaders/water.frag");
 
-    // ---- Shadow map --------------------------------------------------------
+    
     ShadowMap shadowMap;
 
-    // ---- Scene objects -----------------------------------------------------
+    
     Skybox skybox;
     Drone  drone;
     Mesh   groundPlane = Mesh::createPlane(260.0f, 200.0f, 2, 2);
@@ -234,9 +234,9 @@ int main() {
     for (const auto &cfg : configs)
         holes.push_back(HoleFactory::build(cfg));
 
-    // ---- Course decoration props (placed once, drawn every frame) ----------
+    
     static const DecorInstance COURSE_DECOR[] = {
-        // Wine barrels — corners and mid edges, shifted clear of hole bounds
+        
         {"Barrel",     {-54.0f, 0.3f, -10.0f}, {1.2f, 1.2f, 1.2f},  0.0f},
         {"Barrel",     {-54.0f, 0.3f,  10.0f}, {1.2f, 1.2f, 1.2f}, 45.0f},
         {"Barrel",     { 54.0f, 0.3f, -10.0f}, {1.2f, 1.2f, 1.2f}, 20.0f},
@@ -245,7 +245,7 @@ int main() {
         {"Barrel",     { -8.0f, 0.3f, -38.0f}, {1.2f, 1.2f, 1.2f},  0.0f},
         {"Barrel",     {  8.0f, 0.3f,  38.0f}, {1.2f, 1.2f, 1.2f}, 15.0f},
         {"Barrel",     { -8.0f, 0.3f,  38.0f}, {1.2f, 1.2f, 1.2f}, 45.0f},
-        // Rock clusters — placed in gaps between holes
+        
         {"Rock",       {-16.0f, 0.3f, -13.0f}, {1.5f, 1.1f, 1.3f},  0.0f},
         {"Rock",       {-13.0f, 0.3f, -11.0f}, {1.0f, 0.8f, 1.2f}, 20.0f},
         {"Rock",       { 16.0f, 0.3f,  13.0f}, {1.4f, 1.0f, 1.1f},  0.0f},
@@ -254,12 +254,12 @@ int main() {
         {"Rock",       { 54.0f, 0.3f,   5.0f}, {1.6f, 1.1f, 1.4f},  0.0f},
         {"Rock",       {  5.0f, 0.3f, -16.0f}, {1.3f, 1.0f, 1.2f},  0.0f},
         {"Rock",       { -5.0f, 0.3f,  16.0f}, {1.2f, 0.9f, 1.1f},  0.0f},
-        // Log barriers — perimeter markers
+        
         {"LogBarrier", {-54.0f, 0.2f, -18.0f}, {1.5f, 1.0f, 1.0f},  0.0f},
         {"LogBarrier", {-54.0f, 0.2f,  18.0f}, {1.5f, 1.0f, 1.0f},  0.0f},
         {"LogBarrier", { 54.0f, 0.2f, -18.0f}, {1.5f, 1.0f, 1.0f},  0.0f},
         {"LogBarrier", { 54.0f, 0.2f,  18.0f}, {1.5f, 1.0f, 1.0f},  0.0f},
-        // Light poles — 18 total, |X|=42→52, |Z|=36→42
+        
         {"LightPole",  {-52.0f, 0.0f, -28.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
         {"LightPole",  { 52.0f, 0.0f, -28.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
         {"LightPole",  {-52.0f, 0.0f,  28.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
@@ -301,7 +301,7 @@ int main() {
         }
     };
 
-    // ---- World stream mesh — seamless triangle strip, one vertex per waypoint ----
+    
     Mesh streamMesh = []() {
         const float STREAM_WIDTH = 3.5f;
         const float HALF_W       = STREAM_WIDTH * 0.5f;
@@ -312,7 +312,7 @@ int main() {
         for (int i = 0; i < NUM_STREAM_WAYPOINTS; ++i) {
             glm::vec3 pos = STREAM_WAYPOINTS[i];
 
-            // Averaged direction so the right-vector is smooth at every joint
+            
             glm::vec3 dir(1.0f, 0.0f, 0.0f);
             if (i < NUM_STREAM_WAYPOINTS - 1)
                 dir = glm::normalize(STREAM_WAYPOINTS[i + 1] - pos);
@@ -329,11 +329,11 @@ int main() {
                          / STREAM_WIDTH;
 
             glm::vec3 up(0.0f, 1.0f, 0.0f);
-            verts.push_back({pos - right, up, {0.0f, uvLen}});  // left edge
-            verts.push_back({pos + right, up, {1.0f, uvLen}});  // right edge
+            verts.push_back({pos - right, up, {0.0f, uvLen}});  
+            verts.push_back({pos + right, up, {1.0f, uvLen}});  
         }
 
-        // Two triangles per quad between waypoints i and i+1 — CCW from above
+        
         for (int i = 0; i < NUM_STREAM_WAYPOINTS - 1; ++i) {
             unsigned int b = static_cast<unsigned int>(i * 2);
             idx.push_back(b + 0); idx.push_back(b + 1); idx.push_back(b + 2);
@@ -345,28 +345,28 @@ int main() {
     Mesh pavTopBot = Mesh::createPlane(140.0f, 12.0f, 2, 2);
     Mesh pavSide   = Mesh::createPlane( 12.0f, 84.0f, 2, 2);
     Mesh pavCorner = Mesh::createPlane( 12.0f, 12.0f, 2, 2);
-    // Pavement texture (use textures/paving.png). If missing, TextureLoader
-    // will create a white fallback texture so nothing will crash.
+    
+    
     GLuint pavementTex = TextureLoader::load("textures/paving.png");
 
     auto drawPavement = [&](Shader &shader) {
         const float Y = 0.06f;
-        const float SIDE_EPS   = 0.0005f; // small lift to avoid coplanar z-fighting
-        const float CORNER_EPS = 0.0010f; // slightly higher for corners
+        const float SIDE_EPS   = 0.0005f; 
+        const float CORNER_EPS = 0.0010f; 
 
-        // Long top/bottom strips at base Y
+        
         shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, Y, -42.0f)));
         pavTopBot.draw();
         shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, Y,  42.0f)));
         pavTopBot.draw();
 
-        // Side strips lifted slightly
+        
         shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(-64.0f, Y + SIDE_EPS,   0.0f)));
         pavSide.draw();
         shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3( 64.0f, Y + SIDE_EPS,   0.0f)));
         pavSide.draw();
 
-        // Corners lifted a bit more to avoid intersection with both strips
+        
         const glm::vec3 cs[4] = {
             glm::vec3(-64.0f, Y + CORNER_EPS, -42.0f), glm::vec3( 64.0f, Y + CORNER_EPS, -42.0f),
             glm::vec3(-64.0f, Y + CORNER_EPS,  42.0f), glm::vec3( 64.0f, Y + CORNER_EPS,  42.0f)
@@ -381,13 +381,13 @@ int main() {
     float rotorSpin    = 0.0f;
     float lastTime     = static_cast<float>(glfwGetTime());
 
-    // ---- Render loop -------------------------------------------------------
+    
     while (!glfwWindowShouldClose(window)) {
         float now = static_cast<float>(glfwGetTime());
         float dt  = now - lastTime;
         lastTime  = now;
 
-        // --- Per-frame updates
+        
         windmillSpin += 720.0f * dt;
         rotorSpin    += 720.0f * dt;
 
@@ -412,9 +412,9 @@ int main() {
         LightMode light = g_isNight ? nightLight() : dayLight();
         glm::mat4 lsm   = shadowMap.getLightSpaceMatrix(light.dir, glm::vec3(0.0f));
 
-        // ================================================================
-        // PASS 1 — shadow depth map
-        // ================================================================
+        
+        
+        
         shadowMap.beginShadowPass();
         shadowShader.use();
         shadowShader.setMat4("lightSpaceMatrix", lsm);
@@ -435,27 +435,27 @@ int main() {
 
         shadowMap.endShadowPass();
 
-        // ================================================================
-        // PASS 2 — full shading
-        // ================================================================
+        
+        
+        
         glViewport(0, 0, fbW, fbH);
         glClearColor(0.05f, 0.07f, 0.10f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Skybox — no depth write, rendered before everything else
+        
         glDepthMask(GL_FALSE);
         skybox.draw(skyShader, view, projection);
         glDepthMask(GL_TRUE);
 
-        // Bind shadow map to texture unit 1 (stays for all main-shader draws)
+        
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, shadowMap.getDepthTexture());
 
-        // Set all frame-constant uniforms once
+        
         setMainShaderUniforms(mainShader, view, projection, lsm,
                               light, camera, g_isNight);
 
-        // Ground plane — drawn first; ensure no leftover blend state from prev frame
+        
         glDisable(GL_BLEND);
         glDepthMask(GL_TRUE);
         mainShader.setInt ("useTexture",  0);
@@ -466,7 +466,7 @@ int main() {
         mainShader.setInt ("useTexture",  0);
         mainShader.setVec3("objectColor", glm::vec3(0.13f, 0.55f, 0.13f));
 
-        // All 18 holes (terrain, streams, ponds, bridges, windmill, obstacles)
+        
         for (auto &hole : holes) {
             mainShader.setVec3("objectColor", glm::vec3(1.0f));
             hole.draw(mainShader, windmillSpin);
@@ -474,17 +474,17 @@ int main() {
 
         drawDecor(mainShader);
 
-        // Draw pavement using a paving texture bound to texture unit 0
+        
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, pavementTex);
         mainShader.setInt ("objectTexture", 0);
         mainShader.setInt ("useTexture",  1);
         mainShader.setVec3("objectColor", glm::vec3(1.0f));
         drawPavement(mainShader);
-        // Reset to non-textured drawing for subsequent objects
+        
         mainShader.setInt ("useTexture",  0);
 
-        // World stream — semi-transparent water, drawn after all opaque geometry
+        
         {
             glm::vec3 activeLightPos = -light.dir * 100.0f;
             glEnable(GL_BLEND);
@@ -503,10 +503,10 @@ int main() {
             glDisable(GL_BLEND);
         }
 
-        // Drone model
+        
         drone.draw(mainShader, camPos, camFront, rotorSpin);
 
-        // Spotlight cone — transparent overlay; enable alpha only for this draw
+        
         if (camera.spotlightOn) {
             mainShader.setInt("useAlpha", 1);
             drone.drawSpotlightCone(mainShader, camPos);

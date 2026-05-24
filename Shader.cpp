@@ -54,11 +54,10 @@ void Shader::setVec4(const std::string &name, const glm::vec4 &value) const {
 }
 
 void Shader::setMat4(const std::string &name, const glm::mat4 &value) const {
-    glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE,
-                       glm::value_ptr(value));
+    glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE,glm::value_ptr(value));
 }
 
-// Read a file using only stdio.h (fopen/fread) — no <fstream>
+
 std::string Shader::readFile(const std::string &path) {
     FILE *f = fopen(path.c_str(), "rb");
     if (!f) {
@@ -75,8 +74,7 @@ std::string Shader::readFile(const std::string &path) {
     return content;
 }
 
-unsigned int Shader::compileShader(unsigned int type, const std::string &source,
-                                   const std::string &label) {
+unsigned int Shader::compileShader(unsigned int type, const std::string &source,const std::string &label) {
     unsigned int shader = glCreateShader(type);
     const char *src = source.c_str();
     glShaderSource(shader, 1, &src, nullptr);
