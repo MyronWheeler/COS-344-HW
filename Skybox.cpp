@@ -35,20 +35,18 @@ Skybox::Skybox() : isNight(false) {
     // GPU buffers
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
 
     glBindVertexArray(VAO);
+
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(CUBE_VERTS), CUBE_VERTS, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-    glBindVertexArray(0);
 
-    // Index buffer is tiny — embed in a second buffer attached to the same VAO
-    GLuint ebo;
-    glGenBuffers(1, &ebo);
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(CUBE_IDX), CUBE_IDX, GL_STATIC_DRAW);
+
     glBindVertexArray(0);
 
     std::string dayPaths[6], nightPaths[6];
@@ -62,6 +60,7 @@ Skybox::Skybox() : isNight(false) {
 Skybox::~Skybox() {
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
 }
 
 void Skybox::setNight(bool night) {
@@ -70,6 +69,7 @@ void Skybox::setNight(bool night) {
 
 void Skybox::draw(Shader &shader, glm::mat4 view, glm::mat4 projection) {
     glDepthFunc(GL_LEQUAL);
+    glDisable(GL_CULL_FACE);
 
     shader.use();
     shader.setMat4("view",       view);  // translation stripped in skybox.vert
@@ -84,4 +84,5 @@ void Skybox::draw(Shader &shader, glm::mat4 view, glm::mat4 projection) {
     glBindVertexArray(0);
 
     glDepthFunc(GL_LESS);
+    glEnable(GL_CULL_FACE);
 }
