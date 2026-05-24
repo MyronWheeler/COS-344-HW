@@ -4,8 +4,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <iostream>
+#include <sstream>
 #include <vector>
-#include <string>
 #include <cmath>
 #include <cstdlib>
 #include <cstdio>
@@ -24,9 +24,6 @@
 // ---- globals ---------------------------------------------------------------
 
 static Camera *g_camera      = nullptr;
-static bool    g_firstMouse  = true;
-static float   g_lastX       = 640.0f;
-static float   g_lastY       = 360.0f;
 static bool    g_isNight     = false;
 static bool    g_nWasPressed = false;
 
@@ -40,15 +37,6 @@ static void keyCallback(GLFWwindow *window, int key, int /*sc*/, int action, int
         glm::vec3 p = g_camera->getPosition();
         std::cout << "Camera: (" << p.x << ", " << p.y << ", " << p.z << ")\n";
     }
-}
-
-static void mouseCallback(GLFWwindow * /*w*/, double xpos, double ypos) {
-    if (!g_camera) return;
-    float fx = static_cast<float>(xpos);
-    float fy = static_cast<float>(ypos);
-    if (g_firstMouse) { g_lastX = fx; g_lastY = fy; g_firstMouse = false; return; }
-    g_camera->processMouseMovement(fx - g_lastX, -(fy - g_lastY));
-    g_lastX = fx; g_lastY = fy;
 }
 
 static void scrollCallback(GLFWwindow * /*w*/, double /*x*/, double y) {
@@ -124,8 +112,9 @@ static void setMainShaderUniforms(Shader              &shader,
     shader.setVec3("pointLightColor",  plColor);
     shader.setInt ("numPointLights",   NUM_POLE_LIGHTS);
     for (int i = 0; i < NUM_POLE_LIGHTS; ++i) {
-        std::string name = "pointLightPositions[" + std::to_string(i) + "]";
-        shader.setVec3(name, POLE_LIGHT_POS[i]);
+        std::ostringstream oss;
+        oss << "pointLightPositions[" << i << "]";
+        shader.setVec3(oss.str(), POLE_LIGHT_POS[i]);
     }
 
     // Drone spotlight
@@ -155,10 +144,8 @@ int main() {
 
     glfwMakeContextCurrent(window);
     glfwSetKeyCallback(window, keyCallback);
-    glfwSetCursorPosCallback(window, mouseCallback);
     glfwSetScrollCallback(window, scrollCallback);
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK) {
@@ -172,8 +159,20 @@ int main() {
     glViewport(0, 0, 1280, 720);
 
     // ---- Camera -------------------------------------------------------------
-    Camera camera(glm::vec3(0.0f, 40.0f, 50.0f));
+    Camera camera(glm::vec3(0.0f, 25.0f, 40.0f));
     g_camera = &camera;
+
+    std::cout <<
+        "\n=== The Vines Mini Golf — Controls ===\n"
+        "  WASD        - move forward / back / left / right\n"
+        "  Space/Shift - ascend / descend\n"
+        "  Arrow keys  - look around\n"
+        "  Scroll      - adjust movement speed\n"
+        "  N           - toggle day / night\n"
+        "  F           - toggle drone spotlight\n"
+        "  P           - print camera position\n"
+        "  ESC         - quit\n"
+        "======================================\n\n";
 
     // ---- Shaders ------------------------------------------------------------
     Shader mainShader  ("shaders/main.vert",   "shaders/main.frag");

@@ -1,10 +1,9 @@
 #include "Shader.h"
 
 #include <GL/glew.h>
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include <glm/gtc/type_ptr.hpp>
+#include <iostream>
+#include <cstdio>
 
 Shader::Shader(const std::string &vertPath, const std::string &fragPath) {
     std::string vertSrc = readFile(vertPath);
@@ -23,7 +22,7 @@ Shader::Shader(const std::string &vertPath, const std::string &fragPath) {
     if (!success) {
         char log[1024];
         glGetProgramInfoLog(ID, sizeof(log), nullptr, log);
-        std::cerr << "[Shader] Link error:\n" << log << std::endl;
+        std::cerr << "[Shader] Link error:\n" << log << "\n";
     }
 
     glDeleteShader(vert);
@@ -55,21 +54,29 @@ void Shader::setVec4(const std::string &name, const glm::vec4 &value) const {
 }
 
 void Shader::setMat4(const std::string &name, const glm::mat4 &value) const {
-    glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(value));
+    glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE,
+                       glm::value_ptr(value));
 }
 
+// Read a file using only stdio.h (fopen/fread) — no <fstream>
 std::string Shader::readFile(const std::string &path) {
-    std::ifstream file(path);
-    if (!file.is_open()) {
-        std::cerr << "[Shader] Cannot open: " << path << std::endl;
+    FILE *f = fopen(path.c_str(), "rb");
+    if (!f) {
+        std::cerr << "[Shader] Cannot open: " << path << "\n";
         return "";
     }
-    std::ostringstream ss;
-    ss << file.rdbuf();
-    return ss.str();
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    rewind(f);
+    std::string content(static_cast<size_t>(size), '\0');
+    size_t nread = fread(&content[0], 1, static_cast<size_t>(size), f);
+    content.resize(nread);
+    fclose(f);
+    return content;
 }
 
-unsigned int Shader::compileShader(unsigned int type, const std::string &source, const std::string &label) {
+unsigned int Shader::compileShader(unsigned int type, const std::string &source,
+                                   const std::string &label) {
     unsigned int shader = glCreateShader(type);
     const char *src = source.c_str();
     glShaderSource(shader, 1, &src, nullptr);
@@ -80,7 +87,7 @@ unsigned int Shader::compileShader(unsigned int type, const std::string &source,
     if (!success) {
         char log[1024];
         glGetShaderInfoLog(shader, sizeof(log), nullptr, log);
-        std::cerr << "[Shader] Compile error in " << label << ":\n" << log << std::endl;
+        std::cerr << "[Shader] Compile error in " << label << ":\n" << log << "\n";
     }
     return shader;
 }
