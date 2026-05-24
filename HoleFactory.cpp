@@ -67,6 +67,12 @@ HoleNode HoleFactory::build(const HoleConfig &cfg) {
                                  angle, glm::vec3(0, 1, 0));
     }
 
+    if (cfg.hasWindmill) {
+        node.hasWindmill      = true;
+        node.windmill         = new Windmill();
+        node.windmillTransform = glm::translate(glm::mat4(1.0f), cfg.windmillLocalPos);
+    }
+
     for (const auto &e : cfg.obstacles) {
         HoleNode::PlacedObject po;
         po.type      = e.type;
@@ -92,7 +98,7 @@ HoleNode HoleFactory::build(const HoleConfig &cfg) {
     return node;
 }
 
-void HoleNode::draw(Shader &shader) {
+void HoleNode::draw(Shader &shader, float spinAngle) {
     if (terrain)
         terrain->draw(shader, worldTransform);
 
@@ -123,4 +129,7 @@ void HoleNode::draw(Shader &shader) {
         shader.setMat4("model", worldTransform * bridgeTransform);
         bridge->draw();
     }
+
+    if (hasWindmill && windmill)
+        windmill->draw(shader, worldTransform * windmillTransform, spinAngle);
 }

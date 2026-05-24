@@ -26,7 +26,11 @@ struct HoleConfig {
         std::string type;
         glm::vec3   localPos;
         glm::vec3   scale    = glm::vec3(1.0f);
-        float       rotation = 0.0f;    // Y-axis degrees
+        float       rotation = 0.0f;
+
+        ObstacleEntry() = default;
+        ObstacleEntry(const std::string &t, glm::vec3 p, glm::vec3 s, float r)
+            : type(t), localPos(p), scale(s), rotation(r) {}
     };
 
     std::vector<ObstacleEntry> obstacles;

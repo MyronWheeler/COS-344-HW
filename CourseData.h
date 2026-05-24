@@ -84,20 +84,19 @@ inline std::vector<HoleConfig> buildCourseData() {
     std::vector<HoleConfig> holes;
     holes.reserve(18);
 
-    // Row centres on Z; holes alternate slightly in Z to reduce visual overlap
-    const float Z1 = -15.0f;
-    const float Z2 =  15.0f;
-    const float STEP = 7.0f;
-
-    // Row 1 starts at X = -28, steps +7 each hole
-    // Row 2 starts at X = +28, steps -7 each hole
-    auto holeX = [&](int idx) -> float {
-        int row = idx / 9, col = idx % 9;
-        return (row == 0) ? (-28.0f + col * STEP)
-                          : ( 28.0f - col * STEP);
+    // 3-row snake layout — 12 m spacing on X, 20 m between rows on Z.
+    // Row 1 (holes 1–6):  Z = -20, left to right
+    // Row 2 (holes 7–12): Z =   0, right to left (snake turn)
+    // Row 3 (holes 13–18):Z = +20, left to right
+    static const float HOLE_X[18] = {
+        -32.0f, -20.0f,  -8.0f,   4.0f,  16.0f,  28.0f,  // holes 1-6
+         32.0f,  20.0f,   8.0f,  -4.0f, -16.0f, -28.0f,  // holes 7-12
+        -32.0f, -20.0f,  -8.0f,   4.0f,  16.0f,  28.0f,  // holes 13-18
     };
-    auto holeZ = [&](int idx) -> float {
-        return (idx / 9 == 0) ? Z1 : Z2;
+    static const float HOLE_Z[18] = {
+        -20.0f, -22.0f, -20.0f, -22.0f, -20.0f, -22.0f,  // holes 1-6  staggered
+          0.0f,   2.0f,   0.0f,   2.0f,   0.0f,   2.0f,  // holes 7-12 staggered
+         20.0f,  22.0f,  20.0f,  22.0f,  20.0f,  22.0f,  // holes 13-18 staggered
     };
 
     int parCycle[4] = {3, 3, 4, 3};
@@ -106,7 +105,7 @@ inline std::vector<HoleConfig> buildCourseData() {
         HoleConfig h;
         h.holeNumber = i + 1;
         h.par        = parCycle[i % 4];
-        h.position   = glm::vec3(holeX(i), 0.0f, holeZ(i));
+        h.position   = glm::vec3(HOLE_X[i], 0.5f, HOLE_Z[i]);
         h.rotation   = 0.0f;
 
         // Default footprint is overwritten below with the measured research data.

@@ -23,7 +23,7 @@ GLuint TextureLoader::load(const std::string &path) {
 
     GLuint id = 0;
     if (!data) {
-        std::cerr << "[TextureLoader] Failed to load: " << path << "\n";
+        std::cerr << "TEXTURE FAILED: " << path << "\n";
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_2D, id);
         unsigned char white[4] = {255, 255, 255, 255};

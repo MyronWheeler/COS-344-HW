@@ -222,3 +222,46 @@ Mesh Mesh::createSphere(float radius, int segments) {
 
     return Mesh(verts, idx);
 }
+
+Mesh Mesh::createTriangularPrism(float w, float h, float d) {
+    float hw = w * 0.5f;
+    float hd = d * 0.5f;
+
+    glm::vec3 BFL(-hw, 0.0f, -hd);
+    glm::vec3 BFR( hw, 0.0f, -hd);
+    glm::vec3 BBR( hw, 0.0f,  hd);
+    glm::vec3 BBL(-hw, 0.0f,  hd);
+    glm::vec3 TF ( 0.0f,  h, -hd);
+    glm::vec3 TB ( 0.0f,  h,  hd);
+
+    glm::vec3 nL = glm::normalize(glm::vec3(-h, hw, 0.0f));
+    glm::vec3 nR = glm::normalize(glm::vec3( h, hw, 0.0f));
+
+    std::vector<Vertex> verts;
+    std::vector<unsigned int> idx2;
+
+    auto addQuad = [&](glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 n) {
+        unsigned int base = static_cast<unsigned int>(verts.size());
+        verts.push_back({p0, n, {0.0f, 0.0f}});
+        verts.push_back({p1, n, {1.0f, 0.0f}});
+        verts.push_back({p2, n, {1.0f, 1.0f}});
+        verts.push_back({p3, n, {0.0f, 1.0f}});
+        idx2.push_back(base);     idx2.push_back(base + 1); idx2.push_back(base + 2);
+        idx2.push_back(base);     idx2.push_back(base + 2); idx2.push_back(base + 3);
+    };
+    auto addTri = [&](glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 n) {
+        unsigned int base = static_cast<unsigned int>(verts.size());
+        verts.push_back({p0, n, {0.5f, 0.0f}});
+        verts.push_back({p1, n, {1.0f, 1.0f}});
+        verts.push_back({p2, n, {0.0f, 1.0f}});
+        idx2.push_back(base); idx2.push_back(base + 1); idx2.push_back(base + 2);
+    };
+
+    addQuad(BFL, BBL, TB,  TF,  nL);
+    addQuad(BFR, TF,  TB,  BBR, nR);
+    addTri (BFL, TF,  BFR, glm::vec3( 0.0f,  0.0f, -1.0f));
+    addTri (BBR, TB,  BBL, glm::vec3( 0.0f,  0.0f,  1.0f));
+    addQuad(BFL, BFR, BBR, BBL, glm::vec3( 0.0f, -1.0f,  0.0f));
+
+    return Mesh(verts, idx2);
+}

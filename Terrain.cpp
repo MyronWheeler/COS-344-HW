@@ -128,17 +128,14 @@ Terrain::Terrain(const std::vector<glm::vec2> &boundary,
 
 void Terrain::draw(Shader &shader, glm::mat4 worldTransform) {
     shader.use();
-
     shader.setMat4("model", worldTransform);
-    shader.setVec3("objectColor", glm::vec3(0.13f, 0.55f, 0.13f));
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, TextureLoader::load("textures/grass.png"));
-    shader.setInt("objectTexture", 0);
-    shader.setInt("useTexture", 1);
+    // Fairway — solid vivid green (no texture dependency)
+    shader.setInt ("useTexture",   0);
+    shader.setVec3("objectColor",  glm::vec3(0.13f, 0.55f, 0.13f));
     fairway.draw();
 
-    shader.setVec3("objectColor", glm::vec3(0.55f, 0.50f, 0.40f));
-    glBindTexture(GL_TEXTURE_2D, TextureLoader::load("textures/gravel.png"));
+    // Surround — solid red-brown (no texture dependency)
+    shader.setInt ("useTexture",   0);
+    shader.setVec3("objectColor",  glm::vec3(0.45f, 0.22f, 0.08f));
     surround.draw();
-    shader.setInt("useTexture", 0);
 }

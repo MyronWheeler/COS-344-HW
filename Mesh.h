@@ -20,6 +20,7 @@ public:
     static Mesh createBox(float w, float h, float d);
     static Mesh createCylinder(float radius, float height, int segments);
     static Mesh createSphere(float radius, int segments);
+    static Mesh createTriangularPrism(float w, float h, float d);
 
 private:
     unsigned int VAO, VBO, EBO;

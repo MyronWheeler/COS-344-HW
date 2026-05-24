@@ -3,14 +3,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
 
-static const float FOV          = 45.0f;
-static const float NEAR_PLANE   = 0.1f;
-static const float FAR_PLANE    = 500.0f;
-static const float LERP_FACTOR  = 12.0f;
-static const float SPEED_MIN    = 1.0f;
-static const float SPEED_MAX    = 80.0f;
+static const float FOV              = 45.0f;
+static const float NEAR_PLANE       = 0.1f;
+static const float FAR_PLANE        = 500.0f;
+static const float LERP_FACTOR      = 12.0f;
+static const float SPEED_MIN        = 1.0f;
+static const float SPEED_MAX        = 80.0f;
 static const float SPOTLIGHT_CUTOFF = 15.0f;
-
 Camera::Camera(glm::vec3 startPosition)
     : spotlightOn(false)
     , position(startPosition)
