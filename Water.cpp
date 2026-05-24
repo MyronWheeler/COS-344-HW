@@ -61,10 +61,13 @@ static void buildWaterMesh(float w, float d, int nx, int nz,
     glBindVertexArray(0);
 }
 
-Water::Water(float width, float depth, glm::vec3 worldPos) {
+Water::Water(float width, float depth, glm::vec3 worldPos, float rotY) {
     buildWaterMesh(width, depth, 20, 20, VAO, VBO, EBO, indexCount);
     normalMap   = TextureLoader::load("textures/water_normal.png");
+    
+    // Apply translation AND rotation to position the river diagonally!
     modelMatrix = glm::translate(glm::mat4(1.0f), worldPos);
+    modelMatrix = glm::rotate(modelMatrix, glm::radians(rotY), glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void Water::draw(Shader &shader, float time, glm::mat4 view, glm::mat4 projection,
