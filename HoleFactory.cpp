@@ -43,11 +43,8 @@ HoleNode HoleFactory::build(const HoleConfig &cfg) {
         node.terrain = new Terrain(cfg.boundaryPoints, elevs);
     }
 
-    if (cfg.hasStream && cfg.streamPath.size() >= 2) {
-        for (size_t i = 0; i + 1 < cfg.streamPath.size(); ++i)
-            node.streamSegments.push_back(
-                makeStreamSegment(cfg.streamPath[i], cfg.streamPath[i + 1], 1.5f));
-    }
+    // Streams disabled: omit creating stream segments so the long blue
+    // water strip is not rendered across the course.
 
     if (cfg.hasBridge && cfg.streamPath.size() >= 2) {
         node.hasBridge      = true;
@@ -66,11 +63,27 @@ HoleNode HoleFactory::build(const HoleConfig &cfg) {
         node.windmillTransform = glm::translate(glm::mat4(1.0f), cfg.windmillLocalPos);
     }
 
+    // Compute centroid of the hole boundary in local XZ so we can center
+    // certain obstacles (bunkers) on the green.
+    glm::vec2 holeCentroid(0.0f, 0.0f);
+    if (!cfg.boundaryPoints.empty()) {
+        for (const auto &p : cfg.boundaryPoints) holeCentroid += p;
+        holeCentroid /= static_cast<float>(cfg.boundaryPoints.size());
+    }
+
     for (const auto &e : cfg.obstacles) {
         HoleNode::PlacedObject po;
         po.type       = e.type;
         glm::vec3 pos = e.localPos;
-        if (e.type == "Bunker") pos.y = 0.02f;
+        if (e.type == "Bunker") {
+            // Place bunker at the centroid of the hole boundary (green center)
+            // and raise it slightly to sit on top of the green surface.
+            if (!cfg.boundaryPoints.empty()) {
+                pos.x = holeCentroid.x;
+                pos.z = holeCentroid.y;
+            }
+            pos.y = 0.18f; // raised so bunker rim is visible above the green
+        }
         po.transform  = glm::scale(
                           glm::rotate(
                             glm::translate(glm::mat4(1.0f), pos),
@@ -104,17 +117,7 @@ void HoleNode::draw(Shader &shader, float spinAngle) {
     if (terrain)
         terrain->draw(shader, worldTransform);
 
-    {
-        GLuint waterTex = TextureLoader::load("textures/water_normal.png");
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, waterTex);
-        shader.setInt("objectTexture", 0);
-        shader.setVec3("objectColor", glm::vec3(0.1f, 0.35f, 0.5f));
-        for (auto &seg : streamSegments) {
-            shader.setMat4("model", worldTransform * seg.transform);
-            seg.mesh.draw();
-        }
-    }
+    // Streams disabled: no streamSegments drawing.
 
     if (hasBridge && bridge) {
         glActiveTexture(GL_TEXTURE0);
