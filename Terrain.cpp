@@ -38,32 +38,45 @@ Mesh Terrain::buildFairway(const std::vector<glm::vec2> &boundary,
     std::vector<Vertex> verts;
     std::vector<unsigned int> idx;
 
+    // XZ centroid
     glm::vec2 centroid2(0.0f);
-    float centroidY = 0.0f;
-    for (size_t i = 0; i < n; ++i) {
+    for (size_t i = 0; i < n; ++i)
         centroid2 += boundary[i];
-        centroidY += elevations[i];
-    }
     centroid2 /= static_cast<float>(n);
-    centroidY /= static_cast<float>(n);
 
-    glm::vec3 centroid3(centroid2.x, centroidY + 0.1f, centroid2.y);
+    // Hump height: average of elevation data scaled down so the rise is subtle.
+    // Boundary vertices are always Y=0; only the interior rises.
+    float humpHeight = 0.0f;
+    for (float e : elevations) humpHeight += e;
+    humpHeight /= static_cast<float>(elevations.size());
+    humpHeight *= 0.6f;
 
+    // Furthest boundary vertex from centroid — used to interpolate any
+    // interior vertices: Y = humpHeight * (1 - distFromCentroid / maxRadius)
+    float maxRadius = 0.0f;
+    for (size_t i = 0; i < n; ++i) {
+        float d = glm::length(boundary[i] - centroid2);
+        if (d > maxRadius) maxRadius = d;
+    }
+
+    // Centroid vertex — peak of the hump (dist=0 → full humpHeight)
     Vertex cv;
-    cv.position = centroid3;
+    cv.position = glm::vec3(centroid2.x, humpHeight, centroid2.y);
     cv.normal   = glm::vec3(0, 1, 0);
     cv.texcoord = glm::vec2(0.5f, 0.5f);
     verts.push_back(cv);
 
+    // Boundary vertices — always flat at Y=0
     for (size_t i = 0; i < n; ++i) {
         Vertex v;
-        v.position = glm::vec3(boundary[i].x, elevations[i] + 0.1f, boundary[i].y);
+        v.position = glm::vec3(boundary[i].x, 0.0f, boundary[i].y);
         v.normal   = glm::vec3(0, 1, 0);
         v.texcoord = glm::vec2((boundary[i].x - centroid2.x) * 0.1f + 0.5f,
                                (boundary[i].y - centroid2.y) * 0.1f + 0.5f);
         verts.push_back(v);
     }
 
+    // Fan triangulation — accumulate face normals so the hump lights correctly
     for (size_t i = 0; i < n; ++i) {
         unsigned int a = 0;
         unsigned int b = static_cast<unsigned int>(1 + i);
@@ -82,7 +95,7 @@ Mesh Terrain::buildFairway(const std::vector<glm::vec2> &boundary,
 }
 
 Mesh Terrain::buildSurround(const std::vector<glm::vec2> &boundary, float minElevation) {
-    const float OFFSET = 1.5f;
+    const float OFFSET = 3.0f;
     std::vector<glm::vec2> outer = offsetPolygon(boundary, OFFSET);
     size_t n = boundary.size();
 
@@ -91,57 +104,58 @@ Mesh Terrain::buildSurround(const std::vector<glm::vec2> &boundary, float minEle
 
     for (size_t i = 0; i < n; ++i) {
         Vertex inner, outerV;
+        // All surround vertices sit at a fixed Y above the ground plane
         inner.position  = glm::vec3(boundary[i].x, minElevation, boundary[i].y);
-        inner.normal    = glm::vec3(0, 1, 0);
+        inner.normal    = glm::vec3(0.0f, 1.0f, 0.0f);
         inner.texcoord  = glm::vec2(static_cast<float>(i) / n, 0.0f);
 
         outerV.position = glm::vec3(outer[i].x, minElevation, outer[i].y);
-        outerV.normal   = glm::vec3(0, 1, 0);
+        outerV.normal   = glm::vec3(0.0f, 1.0f, 0.0f);
         outerV.texcoord = glm::vec2(static_cast<float>(i) / n, 1.0f);
 
         verts.push_back(inner);
         verts.push_back(outerV);
     }
 
+    // CCW from above (+Y): inner0→inner1→outer0, inner1→outer1→outer0
     for (size_t i = 0; i < n; ++i) {
         unsigned int i0 = static_cast<unsigned int>(2 * i);
         unsigned int i1 = i0 + 1;
         unsigned int i2 = static_cast<unsigned int>(2 * ((i + 1) % n));
         unsigned int i3 = i2 + 1;
-        idx.push_back(i0); idx.push_back(i1); idx.push_back(i2);
-        idx.push_back(i1); idx.push_back(i3); idx.push_back(i2);
+        idx.push_back(i0); idx.push_back(i2); idx.push_back(i1);
+        idx.push_back(i2); idx.push_back(i3); idx.push_back(i1);
     }
 
-    for (auto &v : verts)
-        if (v.normal.y < 0.0f) v.normal *= -1.0f;
-
     return Mesh(verts, idx);
-}
-
-// Manual min — replaces std::min_element (no <algorithm> needed)
-static float vecMin(const std::vector<float> &v) {
-    float m = v[0];
-    for (size_t i = 1; i < v.size(); ++i)
-        if (v[i] < m) m = v[i];
-    return m;
 }
 
 Terrain::Terrain(const std::vector<glm::vec2> &boundary,
                  const std::vector<float>     &elevations)
     : fairway(buildFairway(boundary, elevations))
-    , surround(buildSurround(boundary, vecMin(elevations)))
+    , surround(buildSurround(boundary, 0.15f))
 {}
 
 void Terrain::draw(Shader &shader, glm::mat4 worldTransform) {
     shader.use();
     shader.setMat4("model", worldTransform);
-    // Fairway — solid vivid green (no texture dependency)
-    shader.setInt ("useTexture",   0);
-    shader.setVec3("objectColor",  glm::vec3(0.20f, 0.80f, 0.20f));
+
+    // Fairway — grass texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, TextureLoader::load("textures/grass.png"));
+    shader.setInt("objectTexture", 0);
+    shader.setInt("useTexture", 1);
     fairway.draw();
 
-    // Surround — solid red-brown (no texture dependency)
-    shader.setInt ("useTexture",   0);
-    shader.setVec3("objectColor",  glm::vec3(0.60f, 0.22f, 0.06f));
+    // Surround — gravel texture; polygon offset prevents z-fighting with fairway
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, TextureLoader::load("textures/gravel.png"));
+    shader.setInt("objectTexture", 0);
+    shader.setInt("useTexture", 1);
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(-1.0f, -1.0f);
     surround.draw();
+    glDisable(GL_POLYGON_OFFSET_FILL);
+
+    shader.setInt("useTexture", 0);
 }

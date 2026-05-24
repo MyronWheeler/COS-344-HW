@@ -3,7 +3,7 @@
 #include <GL/glew.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
-#include <cstdio>
+#include <stdio.h>
 
 Shader::Shader(const std::string &vertPath, const std::string &fragPath) {
     std::string vertSrc = readFile(vertPath);

@@ -67,7 +67,7 @@ private:
 // ---------------------------------------------------------------------------
 class FlagPole {
 public:
-    explicit FlagPole(glm::vec3 flagColor = glm::vec3(1.0f, 0.0f, 0.0f));
+    explicit FlagPole(glm::vec3 flagColor = glm::vec3(1.0f, 0.1f, 0.1f));
     void draw(Shader &shader, glm::mat4 modelMatrix);
 private:
     Mesh      pole;

@@ -49,13 +49,6 @@ HoleNode HoleFactory::build(const HoleConfig &cfg) {
                 makeStreamSegment(cfg.streamPath[i], cfg.streamPath[i + 1], 1.5f));
     }
 
-    if (cfg.hasPond) {
-        node.hasPond       = true;
-        node.pond          = new Mesh(Mesh::createSphere(cfg.pondRadius, 32));
-        node.pondTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0.02f, 0))
-                           * glm::scale(glm::mat4(1.0f), glm::vec3(1, 0.05f, 1));
-    }
-
     if (cfg.hasBridge && cfg.streamPath.size() >= 2) {
         node.hasBridge      = true;
         node.bridge         = new Mesh(Mesh::createBox(2.0f, 0.1f, 1.6f));
@@ -75,12 +68,14 @@ HoleNode HoleFactory::build(const HoleConfig &cfg) {
 
     for (const auto &e : cfg.obstacles) {
         HoleNode::PlacedObject po;
-        po.type      = e.type;
-        po.transform = glm::scale(
-                         glm::rotate(
-                           glm::translate(glm::mat4(1.0f), e.localPos),
-                           glm::radians(e.rotation), glm::vec3(0,1,0)),
-                         e.scale);
+        po.type       = e.type;
+        glm::vec3 pos = e.localPos;
+        if (e.type == "Bunker") pos.y = 0.02f;
+        po.transform  = glm::scale(
+                          glm::rotate(
+                            glm::translate(glm::mat4(1.0f), pos),
+                            glm::radians(e.rotation), glm::vec3(0,1,0)),
+                          e.scale);
         node.obstacles.push_back(std::move(po));
     }
 
@@ -93,6 +88,13 @@ HoleNode HoleFactory::build(const HoleConfig &cfg) {
                            glm::radians(e.rotation), glm::vec3(0,1,0)),
                          e.scale);
         node.decor.push_back(std::move(po));
+
+        if (e.type == "FlagPole") {
+            HoleNode::HoleCup cup;
+            cup.transform = glm::translate(glm::mat4(1.0f),
+                              glm::vec3(e.localPos.x, 0.08f, e.localPos.z));
+            node.holeCups.push_back(cup);
+        }
     }
 
     return node;
@@ -114,20 +116,14 @@ void HoleNode::draw(Shader &shader, float spinAngle) {
         }
     }
 
-    if (hasPond && pond) {
-        shader.setVec3("objectColor", glm::vec3(0.05f, 0.3f, 0.55f));
-        shader.setMat4("model", worldTransform * pondTransform);
-        pond->draw();
-    }
-
     if (hasBridge && bridge) {
-        GLuint woodTex = TextureLoader::load("textures/wood.png");
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, woodTex);
+        glBindTexture(GL_TEXTURE_2D, TextureLoader::load("textures/wood.png"));
         shader.setInt("objectTexture", 0);
-        shader.setVec3("objectColor", glm::vec3(0.6f, 0.4f, 0.2f));
+        shader.setInt("useTexture", 1);
         shader.setMat4("model", worldTransform * bridgeTransform);
         bridge->draw();
+        shader.setInt("useTexture", 0);
     }
 
     if (hasWindmill && windmill)
@@ -137,8 +133,8 @@ void HoleNode::draw(Shader &shader, float spinAngle) {
     {
         static Mesh s_rock     = Mesh::createSphere(0.5f, 12);
         static Mesh s_barrel   = Mesh::createCylinder(0.35f, 0.7f, 16);
-        static Mesh s_bunker   = Mesh::createCylinder(1.0f, 0.15f, 20);
-        static Mesh s_plank    = Mesh::createBox(2.0f, 0.1f, 0.3f);
+        static Mesh s_bunker   = Mesh::createCylinder(0.9f, 0.04f, 16);
+        static Mesh s_plank    = Mesh::createBox(2.0f, 0.08f, 0.6f);
         static Mesh s_fallback = Mesh::createBox(0.5f, 0.5f, 0.5f);
         static FlagPole s_flag;
 
@@ -146,31 +142,58 @@ void HoleNode::draw(Shader &shader, float spinAngle) {
             const std::vector<PlacedObject> &list = (pass == 0) ? obstacles : decor;
             for (const auto &po : list) {
                 glm::mat4 m = worldTransform * po.transform;
-                shader.setInt("useTexture", 0);
                 if (po.type == "Rock") {
-                    shader.setVec3("objectColor", glm::vec3(0.50f, 0.45f, 0.40f));
+                    glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, TextureLoader::load("textures/rock.png"));
+                    shader.setInt("objectTexture", 0);
+                    shader.setInt("useTexture", 1);
                     shader.setMat4("model", m);
                     s_rock.draw();
+                    shader.setInt("useTexture", 0);
                 } else if (po.type == "Barrel") {
-                    shader.setVec3("objectColor", glm::vec3(0.40f, 0.25f, 0.10f));
+                    glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, TextureLoader::load("textures/wood.png"));
+                    shader.setInt("objectTexture", 0);
+                    shader.setInt("useTexture", 1);
                     shader.setMat4("model", m);
                     s_barrel.draw();
+                    shader.setInt("useTexture", 0);
                 } else if (po.type == "Bunker") {
-                    shader.setVec3("objectColor", glm::vec3(0.85f, 0.75f, 0.50f));
+                    glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, TextureLoader::load("textures/sand.png"));
+                    shader.setInt("objectTexture", 0);
+                    shader.setInt("useTexture", 1);
                     shader.setMat4("model", m);
                     s_bunker.draw();
+                    shader.setInt("useTexture", 0);
                 } else if (po.type == "Plank") {
-                    shader.setVec3("objectColor", glm::vec3(0.50f, 0.35f, 0.15f));
+                    glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, TextureLoader::load("textures/wood.png"));
+                    shader.setInt("objectTexture", 0);
+                    shader.setInt("useTexture", 1);
                     shader.setMat4("model", m);
                     s_plank.draw();
+                    shader.setInt("useTexture", 0);
                 } else if (po.type == "FlagPole") {
                     s_flag.draw(shader, m);
                 } else {
+                    shader.setInt("useTexture", 0);
                     shader.setVec3("objectColor", glm::vec3(0.50f, 0.50f, 0.50f));
                     shader.setMat4("model", m);
                     s_fallback.draw();
                 }
             }
+        }
+    }
+
+    // Black hole cups — one flat disk per FlagPole decor entry
+    {
+        static Mesh cupMesh = Mesh::createCylinder(0.25f, 0.02f, 16);
+        shader.setInt("useTexture", 0);
+        shader.setVec3("objectColor", glm::vec3(0.0f, 0.0f, 0.0f));
+        for (auto &cup : holeCups) {
+            shader.setMat4("model", worldTransform * cup.transform);
+            cupMesh.draw();
         }
     }
 }

@@ -29,11 +29,11 @@ void main() {
     vec3 reflectDir = reflect(-lightDir, norm);
     float spec      = pow(max(dot(viewDir, reflectDir), 0.0), 64.0);
 
-    vec3 waterColor = vec3(0.05, 0.35, 0.45);  // blue-green tint
-    vec3 ambient    = 0.2  * waterColor;
-    vec3 diffuse    = 0.6  * diff * waterColor;
-    vec3 specular   = 0.9  * spec * vec3(1.0);  // white highlight
+    vec3 waterColor = vec3(0.04, 0.42, 0.78);  // vivid blue
+    vec3 ambient    = 0.30 * waterColor;
+    vec3 diffuse    = 0.70 * diff * waterColor;
+    vec3 specular   = 1.20 * spec * vec3(1.0);  // bright white highlight
 
     vec3 result = ambient + diffuse + specular;
-    FragColor   = vec4(result, 0.85);            // semi-transparent
+    FragColor   = vec4(result, 0.90);            // mostly opaque
 }

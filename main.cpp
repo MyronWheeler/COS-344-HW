@@ -7,11 +7,11 @@
 #include <sstream>
 #include <vector>
 #include <cmath>
-#include <cstdlib>
-#include <cstdio>
+#include <stdlib.h>
 
 #include "Shader.h"
 #include "Mesh.h"
+#include "TextureLoader.h"
 #include "Camera.h"
 #include "Skybox.h"
 #include "Objects.h"
@@ -20,6 +20,39 @@
 #include "CourseData.h"
 #include "ShadowMap.h"
 #include "Drone.h"
+
+// ---- Course decoration data ------------------------------------------------
+
+struct DecorInstance {
+    std::string type;
+    glm::vec3   worldPos;
+    glm::vec3   scale;
+    float       rotation;
+};
+
+// ---- World stream waypoints ------------------------------------------------
+
+static const glm::vec3 STREAM_WAYPOINTS[] = {
+    // Entry from left, winds between row 1 (Z≈-29) and row 2 (Z≈1)
+    {-55.0f,  0.08f, -15.0f},
+    {-38.0f,  0.08f, -14.0f},
+    {-26.0f,  0.08f, -16.0f},
+    {-14.0f,  0.08f, -13.0f},
+    { -4.0f,  0.08f, -15.0f},
+    {  6.0f,  0.08f, -14.0f},
+    // Curves through the mid gap
+    { 10.0f,  0.08f,  -8.0f},
+    {  8.0f,  0.08f,   0.0f},
+    {  6.0f,  0.08f,   8.0f},
+    // Winds between row 2 and row 3 (Z≈29)
+    {  4.0f,  0.08f,  14.0f},
+    { -6.0f,  0.08f,  15.0f},
+    {-16.0f,  0.08f,  14.0f},
+    {-26.0f,  0.08f,  16.0f},
+    {-38.0f,  0.08f,  14.0f},
+    {-55.0f,  0.08f,  15.0f},
+};
+static const int NUM_STREAM_WAYPOINTS = 15;
 
 // ---- globals ---------------------------------------------------------------
 
@@ -67,18 +100,28 @@ static LightMode nightLight() {
 
 // ---- Pole-light positions: ring around the 68×47 m course ------------------
 
-static const int   NUM_POLE_LIGHTS = 8;
-static const float POLE_Y          = 6.0f;
+static const int NUM_POLE_LIGHTS = 18;
 
-static const glm::vec3 POLE_LIGHT_POS[NUM_POLE_LIGHTS] = {
-    {-30.0f, POLE_Y, -22.0f},
-    {  0.0f, POLE_Y, -22.0f},
-    { 30.0f, POLE_Y, -22.0f},
-    { 34.0f, POLE_Y,   0.0f},
-    { 30.0f, POLE_Y,  22.0f},
-    {  0.0f, POLE_Y,  22.0f},
-    {-30.0f, POLE_Y,  22.0f},
-    {-34.0f, POLE_Y,   0.0f},
+// XZ matches each LightPole in COURSE_DECOR exactly; Y=5 at pole-top
+static const glm::vec3 POLE_LIGHT_POSITIONS[NUM_POLE_LIGHTS] = {
+    {-52.0f, 5.0f, -28.0f},
+    { 52.0f, 5.0f, -28.0f},
+    {-52.0f, 5.0f,  28.0f},
+    { 52.0f, 5.0f,  28.0f},
+    {-52.0f, 5.0f,   0.0f},
+    { 52.0f, 5.0f,   0.0f},
+    {  0.0f, 5.0f, -42.0f},
+    {  0.0f, 5.0f,  42.0f},
+    {-52.0f, 5.0f, -14.0f},
+    {-52.0f, 5.0f,  14.0f},
+    { 52.0f, 5.0f, -14.0f},
+    { 52.0f, 5.0f,  14.0f},
+    {-22.0f, 5.0f, -42.0f},
+    { 22.0f, 5.0f, -42.0f},
+    {-22.0f, 5.0f,  42.0f},
+    { 22.0f, 5.0f,  42.0f},
+    {  0.0f, 5.0f, -14.0f},
+    {  0.0f, 5.0f,  14.0f},
 };
 
 // ---- Set all frame-constant uniforms on the main shader --------------------
@@ -98,6 +141,7 @@ static void setMainShaderUniforms(Shader          &shader,
     shader.setInt  ("shadowMap",        1);   // unit 1
     shader.setInt  ("objectTexture",    0);   // unit 0
     shader.setInt  ("useTexture",       0);
+    shader.setInt  ("useAlpha",         0);
     shader.setFloat("objectAlpha",      1.0f);
 
     shader.setVec3("dirLightDirection", light.dir);
@@ -105,15 +149,13 @@ static void setMainShaderUniforms(Shader          &shader,
     shader.setVec3("viewPos",           camera.getPosition());
     shader.setInt ("isNight",           isNight ? 1 : 0);
 
-    glm::vec3 plColor = isNight
-        ? glm::vec3(1.0f, 0.72f, 0.30f)
-        : glm::vec3(0.0f);
-    shader.setVec3("pointLightColor", plColor);
+    // Always warm orange-white; shader scales by 0.3 in day, 1.0 at night
+    shader.setVec3("pointLightColor", glm::vec3(1.0f, 0.90f, 0.65f));
     shader.setInt ("numPointLights",  NUM_POLE_LIGHTS);
     for (int i = 0; i < NUM_POLE_LIGHTS; ++i) {
         std::ostringstream oss;
         oss << "pointLightPositions[" << i << "]";
-        shader.setVec3(oss.str(), POLE_LIGHT_POS[i]);
+        shader.setVec3(oss.str(), POLE_LIGHT_POSITIONS[i]);
     }
 
     shader.setInt  ("spotlightOn",          camera.spotlightOn ? 1 : 0);
@@ -176,6 +218,7 @@ int main() {
     Shader mainShader  ("shaders/main.vert",   "shaders/main.frag");
     Shader shadowShader("shaders/shadow.vert", "shaders/shadow.frag");
     Shader skyShader   ("shaders/skybox.vert", "shaders/skybox.frag");
+    Shader waterShader ("shaders/water.vert",  "shaders/water.frag");
 
     // ---- Shadow map --------------------------------------------------------
     ShadowMap shadowMap;
@@ -183,7 +226,7 @@ int main() {
     // ---- Scene objects -----------------------------------------------------
     Skybox skybox;
     Drone  drone;
-    Mesh   groundPlane = Mesh::createPlane(160.0f, 120.0f, 2, 2);
+    Mesh   groundPlane = Mesh::createPlane(260.0f, 200.0f, 2, 2);
 
     std::vector<HoleConfig> configs = buildCourseData();
     std::vector<HoleNode>   holes;
@@ -191,7 +234,138 @@ int main() {
     for (const auto &cfg : configs)
         holes.push_back(HoleFactory::build(cfg));
 
-    // ---- Per-frame state ---------------------------------------------------
+    // ---- Course decoration props (placed once, drawn every frame) ----------
+    static const DecorInstance COURSE_DECOR[] = {
+        // Wine barrels — corners and mid edges, shifted clear of hole bounds
+        {"Barrel",     {-54.0f, 0.3f, -10.0f}, {1.2f, 1.2f, 1.2f},  0.0f},
+        {"Barrel",     {-54.0f, 0.3f,  10.0f}, {1.2f, 1.2f, 1.2f}, 45.0f},
+        {"Barrel",     { 54.0f, 0.3f, -10.0f}, {1.2f, 1.2f, 1.2f}, 20.0f},
+        {"Barrel",     { 54.0f, 0.3f,  10.0f}, {1.2f, 1.2f, 1.2f}, 60.0f},
+        {"Barrel",     {  8.0f, 0.3f, -38.0f}, {1.2f, 1.2f, 1.2f}, 30.0f},
+        {"Barrel",     { -8.0f, 0.3f, -38.0f}, {1.2f, 1.2f, 1.2f},  0.0f},
+        {"Barrel",     {  8.0f, 0.3f,  38.0f}, {1.2f, 1.2f, 1.2f}, 15.0f},
+        {"Barrel",     { -8.0f, 0.3f,  38.0f}, {1.2f, 1.2f, 1.2f}, 45.0f},
+        // Rock clusters — placed in gaps between holes
+        {"Rock",       {-16.0f, 0.3f, -13.0f}, {1.5f, 1.1f, 1.3f},  0.0f},
+        {"Rock",       {-13.0f, 0.3f, -11.0f}, {1.0f, 0.8f, 1.2f}, 20.0f},
+        {"Rock",       { 16.0f, 0.3f,  13.0f}, {1.4f, 1.0f, 1.1f},  0.0f},
+        {"Rock",       { 13.0f, 0.3f,  11.0f}, {1.1f, 0.9f, 1.3f}, 35.0f},
+        {"Rock",       {-54.0f, 0.3f,  -5.0f}, {1.8f, 1.2f, 1.5f},  0.0f},
+        {"Rock",       { 54.0f, 0.3f,   5.0f}, {1.6f, 1.1f, 1.4f},  0.0f},
+        {"Rock",       {  5.0f, 0.3f, -16.0f}, {1.3f, 1.0f, 1.2f},  0.0f},
+        {"Rock",       { -5.0f, 0.3f,  16.0f}, {1.2f, 0.9f, 1.1f},  0.0f},
+        // Log barriers — perimeter markers
+        {"LogBarrier", {-54.0f, 0.2f, -18.0f}, {1.5f, 1.0f, 1.0f},  0.0f},
+        {"LogBarrier", {-54.0f, 0.2f,  18.0f}, {1.5f, 1.0f, 1.0f},  0.0f},
+        {"LogBarrier", { 54.0f, 0.2f, -18.0f}, {1.5f, 1.0f, 1.0f},  0.0f},
+        {"LogBarrier", { 54.0f, 0.2f,  18.0f}, {1.5f, 1.0f, 1.0f},  0.0f},
+        // Light poles — 18 total, |X|=42→52, |Z|=36→42
+        {"LightPole",  {-52.0f, 0.0f, -28.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  { 52.0f, 0.0f, -28.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  {-52.0f, 0.0f,  28.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  { 52.0f, 0.0f,  28.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  {-52.0f, 0.0f,   0.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  { 52.0f, 0.0f,   0.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  {  0.0f, 0.0f, -42.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  {  0.0f, 0.0f,  42.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  {-52.0f, 0.0f, -14.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  {-52.0f, 0.0f,  14.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  { 52.0f, 0.0f, -14.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  { 52.0f, 0.0f,  14.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  {-22.0f, 0.0f, -42.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  { 22.0f, 0.0f, -42.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  {-22.0f, 0.0f,  42.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  { 22.0f, 0.0f,  42.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  {  0.0f, 0.0f, -14.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+        {"LightPole",  {  0.0f, 0.0f,  14.0f}, {1.0f, 1.0f, 1.0f},  0.0f},
+    };
+    static const int NUM_DECOR = 38;
+
+    Rock      decorRock(glm::vec3(1.0f, 1.0f, 1.0f));
+    Barrel    decorBarrel(false);
+    LightPole decorPole;
+    LogBarrier decorLog;
+
+    auto drawDecor = [&](Shader &shader) {
+        for (int i = 0; i < NUM_DECOR; ++i) {
+            const DecorInstance &d = COURSE_DECOR[i];
+            glm::mat4 m = glm::scale(
+                            glm::rotate(
+                              glm::translate(glm::mat4(1.0f), d.worldPos),
+                              glm::radians(d.rotation), glm::vec3(0.0f, 1.0f, 0.0f)),
+                            d.scale);
+            if      (d.type == "Barrel")     decorBarrel.draw(shader, m);
+            else if (d.type == "Rock")       decorRock.draw(shader, m);
+            else if (d.type == "LightPole")  decorPole.draw(shader, m);
+            else if (d.type == "LogBarrier") decorLog.draw(shader, m);
+        }
+    };
+
+    // ---- World stream mesh — seamless triangle strip, one vertex per waypoint ----
+    Mesh streamMesh = []() {
+        const float STREAM_WIDTH = 3.5f;
+        const float HALF_W       = STREAM_WIDTH * 0.5f;
+        std::vector<Vertex>       verts;
+        std::vector<unsigned int> idx;
+        float uvLen = 0.0f;
+
+        for (int i = 0; i < NUM_STREAM_WAYPOINTS; ++i) {
+            glm::vec3 pos = STREAM_WAYPOINTS[i];
+
+            // Averaged direction so the right-vector is smooth at every joint
+            glm::vec3 dir(1.0f, 0.0f, 0.0f);
+            if (i < NUM_STREAM_WAYPOINTS - 1)
+                dir = glm::normalize(STREAM_WAYPOINTS[i + 1] - pos);
+            if (i > 0) {
+                glm::vec3 prev = glm::normalize(pos - STREAM_WAYPOINTS[i - 1]);
+                dir = glm::normalize(dir + prev);
+            }
+
+            glm::vec3 right = glm::normalize(
+                glm::cross(dir, glm::vec3(0.0f, 1.0f, 0.0f))) * HALF_W;
+
+            if (i > 0)
+                uvLen += glm::length(STREAM_WAYPOINTS[i] - STREAM_WAYPOINTS[i - 1])
+                         / STREAM_WIDTH;
+
+            glm::vec3 up(0.0f, 1.0f, 0.0f);
+            verts.push_back({pos - right, up, {0.0f, uvLen}});  // left edge
+            verts.push_back({pos + right, up, {1.0f, uvLen}});  // right edge
+        }
+
+        // Two triangles per quad between waypoints i and i+1 — CCW from above
+        for (int i = 0; i < NUM_STREAM_WAYPOINTS - 1; ++i) {
+            unsigned int b = static_cast<unsigned int>(i * 2);
+            idx.push_back(b + 0); idx.push_back(b + 1); idx.push_back(b + 2);
+            idx.push_back(b + 1); idx.push_back(b + 3); idx.push_back(b + 2);
+        }
+        return Mesh(verts, idx);
+    }();
+
+    Mesh pavTopBot = Mesh::createPlane(140.0f, 12.0f, 2, 2);
+    Mesh pavSide   = Mesh::createPlane( 12.0f, 84.0f, 2, 2);
+    Mesh pavCorner = Mesh::createPlane( 12.0f, 12.0f, 2, 2);
+
+    auto drawPavement = [&](Shader &shader) {
+        const float Y = 0.06f;
+        shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, Y, -42.0f)));
+        pavTopBot.draw();
+        shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, Y,  42.0f)));
+        pavTopBot.draw();
+        shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(-64.0f, Y,   0.0f)));
+        pavSide.draw();
+        shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3( 64.0f, Y,   0.0f)));
+        pavSide.draw();
+        const glm::vec3 cs[4] = {
+            glm::vec3(-64.0f, Y, -42.0f), glm::vec3( 64.0f, Y, -42.0f),
+            glm::vec3(-64.0f, Y,  42.0f), glm::vec3( 64.0f, Y,  42.0f)
+        };
+        for (int ci = 0; ci < 4; ++ci) {
+            shader.setMat4("model", glm::translate(glm::mat4(1.0f), cs[ci]));
+            pavCorner.draw();
+        }
+    };
+
     float windmillSpin = 0.0f;
     float rotorSpin    = 0.0f;
     float lastTime     = static_cast<float>(glfwGetTime());
@@ -234,11 +408,17 @@ int main() {
         shadowShader.use();
         shadowShader.setMat4("lightSpaceMatrix", lsm);
 
-        shadowShader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f)));
+        shadowShader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.05f, 0.0f)));
         groundPlane.draw();
 
         for (auto &hole : holes)
             hole.draw(shadowShader, windmillSpin);
+
+        drawDecor(shadowShader);
+        drawPavement(shadowShader);
+
+        shadowShader.setMat4("model", glm::mat4(1.0f));
+        streamMesh.draw();
 
         drone.draw(shadowShader, camPos, camFront, rotorSpin);
 
@@ -264,10 +444,12 @@ int main() {
         setMainShaderUniforms(mainShader, view, projection, lsm,
                               light, camera, g_isNight);
 
-        // Ground plane — drawn before holes so holes sit on top
+        // Ground plane — drawn first; ensure no leftover blend state from prev frame
+        glDisable(GL_BLEND);
+        glDepthMask(GL_TRUE);
         mainShader.setInt ("useTexture",  0);
-        mainShader.setVec3("objectColor", glm::vec3(0.08f, 0.28f, 0.05f));
-        mainShader.setMat4("model",       glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f)));
+        mainShader.setVec3("objectColor", glm::vec3(0.06f, 0.22f, 0.04f));
+        mainShader.setMat4("model",       glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.05f, 0.0f)));
         groundPlane.draw();
 
         mainShader.setInt ("useTexture",  0);
@@ -279,12 +461,40 @@ int main() {
             hole.draw(mainShader, windmillSpin);
         }
 
+        drawDecor(mainShader);
+
+        mainShader.setInt ("useTexture",  0);
+        mainShader.setVec3("objectColor", glm::vec3(0.55f, 0.55f, 0.58f));
+        drawPavement(mainShader);
+
+        // World stream — semi-transparent water, drawn after all opaque geometry
+        {
+            glm::vec3 activeLightPos = -light.dir * 100.0f;
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            waterShader.use();
+            waterShader.setMat4 ("view",       view);
+            waterShader.setMat4 ("projection", projection);
+            waterShader.setMat4 ("model",      glm::mat4(1.0f));
+            waterShader.setFloat("time",       now);
+            waterShader.setVec3 ("lightPos",   activeLightPos);
+            waterShader.setVec3 ("viewPos",    camPos);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, TextureLoader::load("textures/water_normal.png"));
+            waterShader.setInt("normalMap", 0);
+            streamMesh.draw();
+            glDisable(GL_BLEND);
+        }
+
         // Drone model
         drone.draw(mainShader, camPos, camFront, rotorSpin);
 
-        // Spotlight cone — transparent overlay, only when spotlight is active
-        if (camera.spotlightOn)
+        // Spotlight cone — transparent overlay; enable alpha only for this draw
+        if (camera.spotlightOn) {
+            mainShader.setInt("useAlpha", 1);
             drone.drawSpotlightCone(mainShader, camPos);
+            mainShader.setInt("useAlpha", 0);
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();

@@ -21,8 +21,19 @@
 
 #include <vector>
 
+static const float HOLE_X[18] = {
+    -42.0f, -26.0f,  -8.0f,   8.0f,  26.0f,  42.0f,
+     42.0f,  26.0f,   8.0f,  -8.0f, -26.0f, -42.0f,
+    -42.0f, -26.0f,  -8.0f,   8.0f,  26.0f,  42.0f,
+};
+static const float HOLE_Z[18] = {
+    -28.0f, -30.0f, -28.0f, -30.0f, -28.0f, -30.0f,
+      0.0f,   2.0f,   0.0f,   2.0f,   0.0f,   2.0f,
+     28.0f,  30.0f,  28.0f,  30.0f,  28.0f,  30.0f,
+};
+
 inline std::vector<HoleConfig> buildCourseData() {
-    return {
+    std::vector<HoleConfig> holes = {
         buildHole01(), buildHole02(), buildHole03(),
         buildHole04(), buildHole05(), buildHole06(),
         buildHole07(), buildHole08(), buildHole09(),
@@ -30,4 +41,7 @@ inline std::vector<HoleConfig> buildCourseData() {
         buildHole13(), buildHole14(), buildHole15(),
         buildHole16(), buildHole17(), buildHole18(),
     };
+    for (int i = 0; i < 18; ++i)
+        holes[i].position = glm::vec3(HOLE_X[i], holes[i].position.y, HOLE_Z[i]);
+    return holes;
 }

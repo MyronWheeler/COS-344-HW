@@ -102,8 +102,8 @@ Mesh Mesh::createBox(float w, float h, float d) {
         idx.push_back(base);     idx.push_back(base + 2); idx.push_back(base + 3);
     };
 
-    // +Y top
-    addFace({-hw, hh, -hd}, { hw, hh, -hd}, { hw, hh,  hd}, {-hw, hh,  hd}, { 0, 1, 0});
+    // +Y top — CCW from above so the face is not culled when viewed from above
+    addFace({-hw, hh, -hd}, {-hw, hh,  hd}, { hw, hh,  hd}, { hw, hh, -hd}, { 0, 1, 0});
     // -Y bottom
     addFace({-hw,-hh,  hd}, { hw,-hh,  hd}, { hw,-hh, -hd}, {-hw,-hh, -hd}, { 0,-1, 0});
     // +Z front

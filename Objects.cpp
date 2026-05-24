@@ -5,11 +5,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-// Helper: set common shader uniforms and bind a texture to unit 0
+// Helper: bind texture to unit 0 and enable texture sampling
 static void bindTex(Shader &shader, GLuint tex) {
-    shader.setInt("diffuseTex", 0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex);
+    shader.setInt("objectTexture", 0);
+    shader.setInt("useTexture", 1);
 }
 
 // ---- Rock ------------------------------------------------------------------
@@ -26,6 +27,7 @@ void Rock::draw(Shader &shader, glm::mat4 modelMatrix) {
     shader.setMat4("model", m);
     bindTex(shader, texture);
     mesh.draw();
+    shader.setInt("useTexture", 0);
 }
 
 // ---- Barrel ----------------------------------------------------------------
@@ -64,6 +66,7 @@ void Barrel::draw(Shader &shader, glm::mat4 modelMatrix) {
     glm::mat4 botM = glm::translate(base, glm::vec3(0.0f, -0.35f, 0.0f));
     shader.setMat4("model", botM);
     capBot.draw();
+    shader.setInt("useTexture", 0);
 }
 
 // ---- LogBarrier ------------------------------------------------------------
@@ -79,6 +82,7 @@ void LogBarrier::draw(Shader &shader, glm::mat4 modelMatrix) {
     shader.setMat4("model", m);
     bindTex(shader, texture);
     mesh.draw();
+    shader.setInt("useTexture", 0);
 }
 
 // ---- Billboard -------------------------------------------------------------
@@ -136,33 +140,34 @@ void Billboard::draw(Shader &shader, glm::mat4 modelMatrix) {
     glm::mat4 m2 = glm::rotate(m, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     shader.setMat4("model", m2);
     quad.draw();
+    shader.setInt("useTexture", 0);
 }
 
 // ---- FlagPole --------------------------------------------------------------
 
 FlagPole::FlagPole(glm::vec3 flagColor)
-    : pole(Mesh::createCylinder(0.05f, 4.0f, 8))
+    : pole(Mesh::createCylinder(0.03f, 1.2f, 8))
     , flag(makeQuad())
     , color(flagColor)
 {}
 
 void FlagPole::draw(Shader &shader, glm::mat4 modelMatrix) {
     shader.use();
-    bindTex(shader, TextureLoader::load("textures/metal.png"));
 
+    // Pole: metal texture
+    bindTex(shader, TextureLoader::load("textures/metal.png"));
     shader.setMat4("model", modelMatrix);
     pole.draw();
 
-    // Flag sits at the top, offset by half pole height
-    glm::mat4 flagM = glm::translate(modelMatrix, glm::vec3(0.3f, 2.2f, 0.0f));
-    flagM = glm::scale(flagM, glm::vec3(0.6f, 0.4f, 1.0f));
-    shader.setMat4("model", flagM);
-    // Tint via objectColor
-    shader.setVec3("objectColor", color);
-    TextureLoader::load("textures/flag.png");
+    // Flag: flag texture (white fallback if file missing)
     bindTex(shader, TextureLoader::load("textures/flag.png"));
+    glm::mat4 flagM = glm::translate(modelMatrix, glm::vec3(0.15f, 0.5f, 0.0f));
+    flagM = glm::scale(flagM, glm::vec3(0.5f, 0.3f, 1.0f));
+    shader.setMat4("model", flagM);
     flag.draw();
-    shader.setVec3("objectColor", glm::vec3(1.0f));  // reset
+
+    shader.setInt("useTexture", 0);
+    shader.setVec3("objectColor", glm::vec3(1.0f));
 }
 
 // ---- Bridge ----------------------------------------------------------------
@@ -177,6 +182,7 @@ void Bridge::draw(Shader &shader, glm::mat4 modelMatrix) {
     shader.setMat4("model", modelMatrix);
     bindTex(shader, texture);
     mesh.draw();
+    shader.setInt("useTexture", 0);
 }
 
 // ---- LightPole -------------------------------------------------------------
@@ -198,6 +204,7 @@ void LightPole::draw(Shader &shader, glm::mat4 modelMatrix) {
     capM = glm::rotate(capM, glm::radians(-15.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     shader.setMat4("model", capM);
     cap.draw();
+    shader.setInt("useTexture", 0);
 }
 
 // ---- Windmill --------------------------------------------------------------
@@ -271,4 +278,5 @@ void Windmill::draw(Shader &shader, glm::mat4 modelMatrix, float spinAngle) {
         bindTex(shader, TextureLoader::load("textures/wood.png"));
         blade.draw();
     }
+    shader.setInt("useTexture", 0);
 }

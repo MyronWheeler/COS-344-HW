@@ -11,9 +11,11 @@ out vec4 FragColor;
 uniform vec3      objectColor;
 uniform float     objectAlpha;
 uniform sampler2D objectTexture;
-uniform bool      useTexture;
+uniform int       useTexture;
 
 // ---- Shadow -----------------------------------------------------------------
+uniform int       useAlpha;     // 1 = apply objectAlpha (spotlight cone only)
+
 uniform sampler2D shadowMap;    // bound to texture unit 1
 
 // ---- Directional light (sun / moon) ----------------------------------------
@@ -21,7 +23,7 @@ uniform vec3 dirLightDirection; // direction the light travels (toward scene, no
 uniform vec3 dirLightColor;
 
 // ---- Point lights (up to 8 pole lights) ------------------------------------
-uniform vec3 pointLightPositions[8];
+uniform vec3 pointLightPositions[18];
 uniform vec3 pointLightColor;
 uniform int  numPointLights;
 
@@ -78,18 +80,18 @@ vec3 calcDirLight(vec3 norm, vec3 viewDir, vec3 base, float shadow) {
 }
 
 // ---- Point light (with quadratic attenuation) --------------------------------
-vec3 calcPointLight(vec3 lPos, vec3 norm, vec3 viewDir, vec3 base) {
+vec3 calcPointLight(vec3 lPos, vec3 norm, vec3 viewDir, vec3 base, vec3 lColor) {
     vec3  toLight = normalize(lPos - FragPos);
     float diff    = max(dot(norm, toLight), 0.0);
     vec3  halfV   = normalize(toLight + viewDir);
     float spec    = pow(max(dot(norm, halfV), 0.0), 32.0);
 
     float d   = length(lPos - FragPos);
-    float att = 1.0 / (1.0 + 0.09 * d + 0.032 * d * d);
+    float att = 1.0 / (1.0 + 0.045 * d + 0.008 * d * d);
 
-    vec3 ambient  = 0.03  * pointLightColor * base;
-    vec3 diffuse  = 0.80  * diff * pointLightColor * base;
-    vec3 specular = 0.25  * spec * pointLightColor;
+    vec3 ambient  = 0.05  * lColor * base;
+    vec3 diffuse  = 0.80  * diff * lColor * base;
+    vec3 specular = 0.60  * spec * lColor;
 
     return (ambient + diffuse + specular) * att;
 }
@@ -119,8 +121,8 @@ vec3 calcSpotlight(vec3 norm, vec3 viewDir, vec3 base) {
 
 // ---- Main -------------------------------------------------------------------
 void main() {
-    vec3 base = useTexture
-        ? texture(objectTexture, TexCoord).rgb * objectColor
+    vec3 base = (useTexture == 1)
+        ? texture(objectTexture, TexCoord).rgb
         : objectColor;
 
     vec3 norm    = normalize(Normal);
@@ -132,15 +134,16 @@ void main() {
 
     vec3 result = calcDirLight(norm, viewDir, base, shadow);
 
-    // Point lights only active at night
-    if (isNight) {
-        for (int i = 0; i < numPointLights; ++i)
-            result += calcPointLight(pointLightPositions[i], norm, viewDir, base);
-    }
+    // Point lights always contribute; 15% in day, full at night
+    float lightScale = isNight ? 1.0 : 0.3;
+    vec3  scaledPL   = pointLightColor * lightScale;
+    for (int i = 0; i < numPointLights; ++i)
+        result += calcPointLight(pointLightPositions[i], norm, viewDir, base, scaledPL);
 
     // Drone spotlight
     if (spotlightOn)
         result += calcSpotlight(norm, viewDir, base);
 
-    FragColor = vec4(result, objectAlpha);
+    float alpha = (useAlpha == 1) ? objectAlpha : 1.0;
+    FragColor = vec4(result, alpha);
 }
