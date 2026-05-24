@@ -345,20 +345,31 @@ int main() {
     Mesh pavTopBot = Mesh::createPlane(140.0f, 12.0f, 2, 2);
     Mesh pavSide   = Mesh::createPlane( 12.0f, 84.0f, 2, 2);
     Mesh pavCorner = Mesh::createPlane( 12.0f, 12.0f, 2, 2);
+    // Pavement texture (use textures/paving.png). If missing, TextureLoader
+    // will create a white fallback texture so nothing will crash.
+    GLuint pavementTex = TextureLoader::load("textures/paving.png");
 
     auto drawPavement = [&](Shader &shader) {
         const float Y = 0.06f;
+        const float SIDE_EPS   = 0.0005f; // small lift to avoid coplanar z-fighting
+        const float CORNER_EPS = 0.0010f; // slightly higher for corners
+
+        // Long top/bottom strips at base Y
         shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, Y, -42.0f)));
         pavTopBot.draw();
         shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, Y,  42.0f)));
         pavTopBot.draw();
-        shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(-64.0f, Y,   0.0f)));
+
+        // Side strips lifted slightly
+        shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(-64.0f, Y + SIDE_EPS,   0.0f)));
         pavSide.draw();
-        shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3( 64.0f, Y,   0.0f)));
+        shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3( 64.0f, Y + SIDE_EPS,   0.0f)));
         pavSide.draw();
+
+        // Corners lifted a bit more to avoid intersection with both strips
         const glm::vec3 cs[4] = {
-            glm::vec3(-64.0f, Y, -42.0f), glm::vec3( 64.0f, Y, -42.0f),
-            glm::vec3(-64.0f, Y,  42.0f), glm::vec3( 64.0f, Y,  42.0f)
+            glm::vec3(-64.0f, Y + CORNER_EPS, -42.0f), glm::vec3( 64.0f, Y + CORNER_EPS, -42.0f),
+            glm::vec3(-64.0f, Y + CORNER_EPS,  42.0f), glm::vec3( 64.0f, Y + CORNER_EPS,  42.0f)
         };
         for (int ci = 0; ci < 4; ++ci) {
             shader.setMat4("model", glm::translate(glm::mat4(1.0f), cs[ci]));
@@ -463,9 +474,15 @@ int main() {
 
         drawDecor(mainShader);
 
-        mainShader.setInt ("useTexture",  0);
-        mainShader.setVec3("objectColor", glm::vec3(0.55f, 0.55f, 0.58f));
+        // Draw pavement using a paving texture bound to texture unit 0
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, pavementTex);
+        mainShader.setInt ("objectTexture", 0);
+        mainShader.setInt ("useTexture",  1);
+        mainShader.setVec3("objectColor", glm::vec3(1.0f));
         drawPavement(mainShader);
+        // Reset to non-textured drawing for subsequent objects
+        mainShader.setInt ("useTexture",  0);
 
         // World stream — semi-transparent water, drawn after all opaque geometry
         {

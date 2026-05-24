@@ -1,5 +1,5 @@
 #pragma once
-#include "HoleConfig.h"
+#include "../HoleConfig.h"
 #include "HoleHelpers.h"
 
 inline HoleConfig buildHole03() {
@@ -11,6 +11,7 @@ inline HoleConfig buildHole03() {
     cfg.hasStream = true;
     cfg.hasBridge = true;
     cfg.streamPath = {{-1.45f, -4.4f}, {-1.45f, 4.4f}};
+    cfg.obstacles.push_back(obs("Bunker", 0.0f, 0.0f, 3.5f, 1.0f, 1.0f, 1.0f));
     cfg.decor.push_back(obs("FlagPole", 0.0f, 0.0f, 3.5f, 0.7f, 1.2f, 0.7f));
     return cfg;
 }

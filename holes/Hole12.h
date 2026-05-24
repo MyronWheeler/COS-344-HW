@@ -1,5 +1,5 @@
 #pragma once
-#include "HoleConfig.h"
+#include "../HoleConfig.h"
 #include "HoleHelpers.h"
 
 inline HoleConfig buildHole12() {
