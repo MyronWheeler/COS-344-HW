@@ -274,8 +274,10 @@ int main() {
         mainShader.setVec3("objectColor", glm::vec3(0.13f, 0.55f, 0.13f));
 
         // All 18 holes (terrain, streams, ponds, bridges, windmill, obstacles)
-        for (auto &hole : holes)
+        for (auto &hole : holes) {
+            mainShader.setVec3("objectColor", glm::vec3(1.0f));
             hole.draw(mainShader, windmillSpin);
+        }
 
         // Drone model
         drone.draw(mainShader, camPos, camFront, rotorSpin);

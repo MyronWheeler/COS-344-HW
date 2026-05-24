@@ -150,8 +150,8 @@ Mesh Mesh::createCylinder(float radius, float height, int segments) {
         unsigned int t0 = b0 + 1;
         unsigned int b1 = b0 + 2;
         unsigned int t1 = b0 + 3;
-        idx.push_back(b0); idx.push_back(b1); idx.push_back(t0);
-        idx.push_back(t0); idx.push_back(b1); idx.push_back(t1);
+        idx.push_back(b0); idx.push_back(t0); idx.push_back(b1);
+        idx.push_back(t0); idx.push_back(t1); idx.push_back(b1);
     }
 
     // Cap vertices
@@ -215,8 +215,8 @@ Mesh Mesh::createSphere(float radius, int segments) {
             unsigned int tr = tl + 1;
             unsigned int bl = tl + static_cast<unsigned int>(slices + 1);
             unsigned int br = bl + 1;
-            idx.push_back(tl); idx.push_back(bl); idx.push_back(tr);
-            idx.push_back(tr); idx.push_back(bl); idx.push_back(br);
+            idx.push_back(tl); idx.push_back(tr); idx.push_back(bl);
+            idx.push_back(tr); idx.push_back(br); idx.push_back(bl);
         }
     }
 

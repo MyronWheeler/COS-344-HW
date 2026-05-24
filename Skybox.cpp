@@ -69,13 +69,10 @@ void Skybox::setNight(bool night) {
 }
 
 void Skybox::draw(Shader &shader, glm::mat4 view, glm::mat4 projection) {
-    // Strip translation so the skybox stays centred on the camera
-    glm::mat4 skyView = glm::mat4(glm::mat3(view));
-
     glDepthFunc(GL_LEQUAL);
 
     shader.use();
-    shader.setMat4("view",       skyView);
+    shader.setMat4("view",       view);  // translation stripped in skybox.vert
     shader.setMat4("projection", projection);
     shader.setInt("skybox", 0);
 

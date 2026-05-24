@@ -68,11 +68,11 @@ Mesh Terrain::buildFairway(const std::vector<glm::vec2> &boundary,
         unsigned int a = 0;
         unsigned int b = static_cast<unsigned int>(1 + i);
         unsigned int c = static_cast<unsigned int>(1 + (i + 1) % n);
-        glm::vec3 norm = computeNormal(verts[a].position, verts[b].position, verts[c].position);
+        glm::vec3 norm = computeNormal(verts[a].position, verts[c].position, verts[b].position);
         verts[a].normal = glm::normalize(verts[a].normal + norm);
         verts[b].normal = glm::normalize(verts[b].normal + norm);
         verts[c].normal = glm::normalize(verts[c].normal + norm);
-        idx.push_back(a); idx.push_back(b); idx.push_back(c);
+        idx.push_back(a); idx.push_back(c); idx.push_back(b);
     }
 
     for (auto &v : verts)
@@ -108,8 +108,8 @@ Mesh Terrain::buildSurround(const std::vector<glm::vec2> &boundary, float minEle
         unsigned int i1 = i0 + 1;
         unsigned int i2 = static_cast<unsigned int>(2 * ((i + 1) % n));
         unsigned int i3 = i2 + 1;
-        idx.push_back(i0); idx.push_back(i2); idx.push_back(i1);
-        idx.push_back(i1); idx.push_back(i2); idx.push_back(i3);
+        idx.push_back(i0); idx.push_back(i1); idx.push_back(i2);
+        idx.push_back(i1); idx.push_back(i3); idx.push_back(i2);
     }
 
     for (auto &v : verts)

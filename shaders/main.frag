@@ -65,7 +65,7 @@ vec3 calcDirLight(vec3 norm, vec3 viewDir, vec3 base, float shadow) {
     vec3 halfV    = normalize(toLight + viewDir);
     float spec    = pow(max(dot(norm, halfV), 0.0), 64.0);
 
-    float ambStr  = isNight ? 0.06 : 0.18;
+    float ambStr  = isNight ? 0.06 : 0.35;
     float diffStr = isNight ? 0.35 : 0.75;
     float specStr = isNight ? 0.05 : 0.35;
 
@@ -124,6 +124,7 @@ void main() {
         : objectColor;
 
     vec3 norm    = normalize(Normal);
+    if (norm.y < 0.0) norm = -norm;
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 toLight = normalize(-dirLightDirection);
 
