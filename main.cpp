@@ -1,7 +1,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include "MathHelpers.h"
 
 #include <iostream>
 #include <sstream>
@@ -289,11 +289,9 @@ int main() {
     auto drawDecor = [&](Shader &shader) {
         for (int i = 0; i < NUM_DECOR; ++i) {
             const DecorInstance &d = COURSE_DECOR[i];
-            glm::mat4 m = glm::scale(
-                            glm::rotate(
-                              glm::translate(glm::mat4(1.0f), d.worldPos),
-                              glm::radians(d.rotation), glm::vec3(0.0f, 1.0f, 0.0f)),
-                            d.scale);
+                        glm::mat4 m = makeTranslate(d.worldPos)
+                                                * makeRotate(degToRad(d.rotation), glm::vec3(0.0f, 1.0f, 0.0f))
+                                                * makeScale(d.scale);
             if      (d.type == "Barrel")     decorBarrel.draw(shader, m);
             else if (d.type == "Rock")       decorRock.draw(shader, m);
             else if (d.type == "LightPole")  decorPole.draw(shader, m);
@@ -355,15 +353,15 @@ int main() {
         const float CORNER_EPS = 0.0010f; 
 
         
-        shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, Y, -42.0f)));
+        shader.setMat4("model", makeTranslate(glm::vec3(  0.0f, Y, -42.0f)));
         pavTopBot.draw();
-        shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(  0.0f, Y,  42.0f)));
+        shader.setMat4("model", makeTranslate(glm::vec3(  0.0f, Y,  42.0f)));
         pavTopBot.draw();
 
         
-        shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(-64.0f, Y + SIDE_EPS,   0.0f)));
+        shader.setMat4("model", makeTranslate(glm::vec3(-64.0f, Y + SIDE_EPS,   0.0f)));
         pavSide.draw();
-        shader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3( 64.0f, Y + SIDE_EPS,   0.0f)));
+        shader.setMat4("model", makeTranslate(glm::vec3( 64.0f, Y + SIDE_EPS,   0.0f)));
         pavSide.draw();
 
         
@@ -372,7 +370,7 @@ int main() {
             glm::vec3(-64.0f, Y + CORNER_EPS,  42.0f), glm::vec3( 64.0f, Y + CORNER_EPS,  42.0f)
         };
         for (int ci = 0; ci < 4; ++ci) {
-            shader.setMat4("model", glm::translate(glm::mat4(1.0f), cs[ci]));
+            shader.setMat4("model", makeTranslate(cs[ci]));
             pavCorner.draw();
         }
     };
@@ -419,7 +417,7 @@ int main() {
         shadowShader.use();
         shadowShader.setMat4("lightSpaceMatrix", lsm);
 
-        shadowShader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.05f, 0.0f)));
+        shadowShader.setMat4("model", makeTranslate(glm::vec3(0.0f, 0.05f, 0.0f)));
         groundPlane.draw();
 
         for (auto &hole : holes)
@@ -460,7 +458,7 @@ int main() {
         glDepthMask(GL_TRUE);
         mainShader.setInt ("useTexture",  0);
         mainShader.setVec3("objectColor", glm::vec3(0.06f, 0.22f, 0.04f));
-        mainShader.setMat4("model",       glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.05f, 0.0f)));
+        mainShader.setMat4("model",       makeTranslate(glm::vec3(0.0f, 0.05f, 0.0f)));
         groundPlane.draw();
 
         mainShader.setInt ("useTexture",  0);

@@ -1,8 +1,8 @@
 #include "HoleFactory.h"
 #include "Shader.h"
 #include "TextureLoader.h"
+#include "MathHelpers.h"
 #include <GL/glew.h>
-#include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
 
 
@@ -22,9 +22,9 @@ static StreamSegment makeStreamSegment(glm::vec2 a, glm::vec2 b, float width) {
 
     glm::vec3 mid((a.x + b.x) * 0.5f, 0.01f, (a.y + b.y) * 0.5f);
     float angle = std::atan2(dir.x, dir.y);
-    glm::mat4 t = glm::translate(glm::mat4(1.0f), mid);
-    t = glm::rotate(t, angle, glm::vec3(0, 1, 0));
-    t = glm::scale(t, glm::vec3(width, 1.0f, len));
+    glm::mat4 t = makeTranslate(glm::vec3(mid.x, 0.01f, mid.y))
+                * makeRotate(angle, glm::vec3(0, 1, 0))
+                * makeScale(glm::vec3(width, 1.0f, len));
 
     return StreamSegment(std::move(seg), t);
 }
@@ -32,8 +32,8 @@ static StreamSegment makeStreamSegment(glm::vec2 a, glm::vec2 b, float width) {
 HoleNode HoleFactory::build(const HoleConfig &cfg) {
     HoleNode node;
 
-    node.worldTransform = glm::translate(glm::mat4(1.0f), cfg.position);
-    node.worldTransform = glm::rotate(node.worldTransform,glm::radians(cfg.rotation), glm::vec3(0, 1, 0));
+    node.worldTransform = makeTranslate(cfg.position)
+                        * makeRotate(degToRad(cfg.rotation), glm::vec3(0, 1, 0));
 
     if (cfg.boundaryPoints.size() >= 3) {
         std::vector<float> elevs = cfg.elevations;
@@ -50,13 +50,14 @@ HoleNode HoleFactory::build(const HoleConfig &cfg) {
         glm::vec2 mid = (cfg.streamPath[0] + cfg.streamPath[1]) * 0.5f;
         glm::vec2 dir = cfg.streamPath[1] - cfg.streamPath[0];
         float angle = std::atan2(dir.x, dir.y);
-        node.bridgeTransform = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(mid.x, 0.06f, mid.y)), angle, glm::vec3(0, 1, 0));
+        node.bridgeTransform = makeTranslate(glm::vec3(mid.x, 0.06f, mid.y))
+                     * makeRotate(angle, glm::vec3(0, 1, 0));
     }
 
     if (cfg.hasWindmill) {
         node.hasWindmill= true;
         node.windmill  = new Windmill();
-        node.windmillTransform = glm::translate(glm::mat4(1.0f), cfg.windmillLocalPos);
+        node.windmillTransform = makeTranslate(cfg.windmillLocalPos);
     }
 
     
@@ -80,23 +81,23 @@ HoleNode HoleFactory::build(const HoleConfig &cfg) {
             }
             pos.y = 0.18f; 
         }
-        po.transform  = glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), pos),glm::radians(e.rotation), glm::vec3(0,1,0)), e.scale);
+        po.transform  = makeTranslate(pos)
+                  * makeRotate(degToRad(e.rotation), glm::vec3(0,1,0))
+                  * makeScale(e.scale);
         node.obstacles.push_back(std::move(po));
     }
 
     for (const auto &e : cfg.decor) {
         HoleNode::PlacedObject po;
         po.type      = e.type;
-        po.transform = glm::scale(
-                         glm::rotate(
-                           glm::translate(glm::mat4(1.0f), e.localPos),
-                           glm::radians(e.rotation), glm::vec3(0,1,0)),
-                         e.scale);
+                        po.transform = makeTranslate(e.localPos)
+                                                 * makeRotate(degToRad(e.rotation), glm::vec3(0,1,0))
+                                                 * makeScale(e.scale);
         node.decor.push_back(std::move(po));
 
         if (e.type == "FlagPole") {
             HoleNode::HoleCup cup;
-            cup.transform = glm::translate(glm::mat4(1.0f), glm::vec3(e.localPos.x, 0.08f, e.localPos.z));
+            cup.transform = makeTranslate(glm::vec3(e.localPos.x, 0.08f, e.localPos.z));
             node.holeCups.push_back(cup);
         }
     }

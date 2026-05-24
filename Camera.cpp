@@ -1,6 +1,6 @@
 #include "Camera.h"
+#include "MathHelpers.h"
 
-#include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
 
 static const float FOV              = 45.0f;
@@ -71,11 +71,11 @@ void Camera::processMouseScroll(float yoffset) {
 }
 
 glm::mat4 Camera::getViewMatrix() const {
-    return glm::lookAt(position, position + front, up);
+    return makeLookAt(position, position + front, up);
 }
 
 glm::mat4 Camera::getProjectionMatrix(float aspectRatio) const {
-    return glm::perspective(glm::radians(FOV), aspectRatio, NEAR_PLANE, FAR_PLANE);
+    return makePerspective(degToRad(FOV), aspectRatio, NEAR_PLANE, FAR_PLANE);
 }
 
 glm::vec3 Camera::getPosition()          const { return position; }
@@ -85,8 +85,8 @@ glm::vec3 Camera::getSpotlightDirection()const { return front;    }
 float     Camera::getCutoffAngle()       const { return SPOTLIGHT_CUTOFF; }
 
 void Camera::updateVectors() {
-    float yawR   = glm::radians(yaw);
-    float pitchR = glm::radians(pitch);
+    float yawR   = degToRad(yaw);
+    float pitchR = degToRad(pitch);
     glm::vec3 f;
     f.x = std::cos(pitchR) * std::cos(yawR);
     f.y = std::sin(pitchR);

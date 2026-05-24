@@ -1,8 +1,8 @@
 #include "Drone.h"
 #include "Shader.h"
+#include "MathHelpers.h"
 
 #include <GL/glew.h>
-#include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
 
 static const float PI = 3.14159265f;
@@ -76,7 +76,7 @@ void Drone::draw(Shader &shader,
     body.draw();
 
     
-    glm::mat4 camBoxM = glm::translate(base, glm::vec3(0.0f, -0.057f, 0.0f));
+    glm::mat4 camBoxM = base * makeTranslate(glm::vec3(0.0f, -0.057f, 0.0f));
     shader.setVec3("objectColor", glm::vec3(0.08f, 0.08f, 0.08f));
     shader.setMat4("model", camBoxM);
     camBox.draw();
@@ -87,8 +87,8 @@ void Drone::draw(Shader &shader,
     const float ARM_ANGLES[2] = {-45.0f, 45.0f};
     shader.setVec3("objectColor", glm::vec3(0.18f, 0.18f, 0.18f));
     for (int i = 0; i < 2; ++i) {
-        glm::mat4 armM = glm::rotate(base, glm::radians(ARM_ANGLES[i]),
-                                     glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 armM = base * makeRotate(degToRad(ARM_ANGLES[i]),
+                           glm::vec3(0.0f, 1.0f, 0.0f));
         shader.setMat4("model", armM);
         arm.draw();
     }
@@ -103,11 +103,11 @@ void Drone::draw(Shader &shader,
     shader.setVec3("objectColor", glm::vec3(0.25f, 0.25f, 0.25f));
     for (int i = 0; i < 4; ++i) {
         glm::vec3 tipLocal(tipX[i], 0.0f, tipZ[i]);
-        glm::mat4 rotorM = glm::translate(base, tipLocal);
+        glm::mat4 rotorM = base * makeTranslate(tipLocal);
         
         float spin = (i % 2 == 0) ? rotorAngle : -rotorAngle;
-        rotorM = glm::rotate(rotorM, glm::radians(spin),
-                             glm::vec3(0.0f, 1.0f, 0.0f));
+        rotorM = rotorM * makeRotate(degToRad(spin),
+                         glm::vec3(0.0f, 1.0f, 0.0f));
         shader.setMat4("model", rotorM);
         rotor.draw();
     }
@@ -118,11 +118,10 @@ void Drone::drawSpotlightCone(Shader &shader, glm::vec3 camPos)
     
     
     const float DEPTH       = 9.0f;
-    const float CONE_RADIUS = DEPTH * tanf(glm::radians(15.0f));
+    const float CONE_RADIUS = DEPTH * std::tan(degToRad(15.0f));
 
     glm::vec3 apex = camPos + glm::vec3(0.0f, -0.90f, 0.0f);
-    glm::mat4 coneM = glm::translate(glm::mat4(1.0f), apex);
-    coneM = glm::scale(coneM, glm::vec3(CONE_RADIUS, DEPTH, CONE_RADIUS));
+    glm::mat4 coneM = makeTranslate(apex) * makeScale(glm::vec3(CONE_RADIUS, DEPTH, CONE_RADIUS));
 
     shader.use();
     shader.setVec3 ("objectColor", glm::vec3(0.95f, 0.95f, 0.70f));

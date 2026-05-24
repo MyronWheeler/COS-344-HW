@@ -2,9 +2,6 @@
 #include "Shader.h"
 #include "TextureLoader.h"
 
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 
 static const float CUBE_VERTS[] = {
     -1, -1, -1,   1, -1, -1,   1,  1, -1,  -1,  1, -1,  

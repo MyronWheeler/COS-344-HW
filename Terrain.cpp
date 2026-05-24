@@ -2,8 +2,6 @@
 #include "Shader.h"
 #include "TextureLoader.h"
 #include <GL/glew.h>
-
-#include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
 
 static glm::vec3 computeNormal(glm::vec3 a, glm::vec3 b, glm::vec3 c) {

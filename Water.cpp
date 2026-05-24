@@ -2,8 +2,7 @@
 #include "Shader.h"
 #include "TextureLoader.h"
 
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include "MathHelpers.h"
 #include <vector>
 
 
@@ -59,7 +58,7 @@ static void buildWaterMesh(float w, float d, int nx, int nz,
 Water::Water(float width, float depth, glm::vec3 worldPos) {
     buildWaterMesh(width, depth, 20, 20, VAO, VBO, EBO, indexCount);
     normalMap   = TextureLoader::load("textures/water_normal.png");
-    modelMatrix = glm::translate(glm::mat4(1.0f), worldPos);
+    modelMatrix = makeTranslate(worldPos);
 }
 
 void Water::draw(Shader &shader, float time, glm::mat4 view, glm::mat4 projection,glm::vec3 lightPos, glm::vec3 viewPos)

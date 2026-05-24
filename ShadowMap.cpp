@@ -1,5 +1,5 @@
 #include "ShadowMap.h"
-#include <glm/gtc/matrix_transform.hpp>
+#include "MathHelpers.h"
 #include <cmath>
 #include <iostream>
 
@@ -51,8 +51,8 @@ glm::mat4 ShadowMap::getLightSpaceMatrix(glm::vec3 lightDir, glm::vec3 sceneCent
     glm::vec3 ld = glm::normalize(lightDir);    
     glm::vec3 worldUp = (std::abs(ld.y) > 0.99f)? glm::vec3(1.0f, 0.0f, 0.0f): glm::vec3(0.0f, 1.0f, 0.0f);
     glm::vec3 lightEye = sceneCenter - ld * 90.0f;
-    glm::mat4 lightView = glm::lookAt(lightEye, sceneCenter, worldUp);
-    glm::mat4 lightProj = glm::ortho(-55.0f, 55.0f, -42.0f, 42.0f, 1.0f, 220.0f);
+    glm::mat4 lightView = makeLookAt(lightEye, sceneCenter, worldUp);
+    glm::mat4 lightProj = makeOrtho(-55.0f, 55.0f, -42.0f, 42.0f, 1.0f, 220.0f);
     return lightProj * lightView;
 }
 

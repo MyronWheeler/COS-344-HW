@@ -1,9 +1,7 @@
 #include "Objects.h"
 #include "Shader.h"
 #include "TextureLoader.h"
-
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include "MathHelpers.h"
 
 
 static void bindTex(Shader &shader, GLuint tex) {
@@ -22,7 +20,7 @@ Rock::Rock(glm::vec3 scale)
 {}
 
 void Rock::draw(Shader &shader, glm::mat4 modelMatrix) {
-    glm::mat4 m = glm::scale(modelMatrix, localScale);
+    glm::mat4 m = modelMatrix * makeScale(localScale);
     shader.use();
     shader.setMat4("model", m);
     bindTex(shader, texture);
@@ -48,7 +46,7 @@ Barrel::Barrel(bool sw)
 void Barrel::draw(Shader &shader, glm::mat4 modelMatrix) {
     glm::mat4 base = modelMatrix;
     if (sideways)
-        base = glm::rotate(base, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        base = base * makeRotate(degToRad(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
     shader.use();
     bindTex(shader, texture);
@@ -58,12 +56,12 @@ void Barrel::draw(Shader &shader, glm::mat4 modelMatrix) {
     body.draw();
 
     
-    glm::mat4 topM = glm::translate(base, glm::vec3(0.0f, 0.35f, 0.0f));
+    glm::mat4 topM = base * makeTranslate(glm::vec3(0.0f, 0.35f, 0.0f));
     shader.setMat4("model", topM);
     capTop.draw();
 
     
-    glm::mat4 botM = glm::translate(base, glm::vec3(0.0f, -0.35f, 0.0f));
+    glm::mat4 botM = base * makeTranslate(glm::vec3(0.0f, -0.35f, 0.0f));
     shader.setMat4("model", botM);
     capBot.draw();
     shader.setInt("useTexture", 0);
@@ -77,7 +75,7 @@ LogBarrier::LogBarrier()
 {}
 
 void LogBarrier::draw(Shader &shader, glm::mat4 modelMatrix) {
-    glm::mat4 m = glm::rotate(modelMatrix, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    glm::mat4 m = modelMatrix * makeRotate(degToRad(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     shader.use();
     shader.setMat4("model", m);
     bindTex(shader, texture);
@@ -125,8 +123,8 @@ void Billboard::draw(Shader &shader, glm::mat4 modelMatrix) {
     rot[1] = glm::vec4(up,0.0f);
     rot[2] = glm::vec4(toCamera,0.0f);
 
-    glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(modelMatrix[0][0],modelMatrix[1][1],modelMatrix[2][2]));
-    glm::mat4 trans = glm::translate(glm::mat4(1.0f), worldPos);
+    glm::mat4 scale = makeScale(glm::vec3(modelMatrix[0][0],modelMatrix[1][1],modelMatrix[2][2]));
+    glm::mat4 trans = makeTranslate(worldPos);
     glm::mat4 m = trans * rot * scale;
 
     shader.use();
@@ -135,7 +133,7 @@ void Billboard::draw(Shader &shader, glm::mat4 modelMatrix) {
     quad.draw();
 
     
-    glm::mat4 m2 = glm::rotate(m, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 m2 = m * makeRotate(degToRad(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     shader.setMat4("model", m2);
     quad.draw();
     shader.setInt("useTexture", 0);
@@ -159,8 +157,8 @@ void FlagPole::draw(Shader &shader, glm::mat4 modelMatrix) {
 
     
     bindTex(shader, TextureLoader::load("textures/flag.png"));
-    glm::mat4 flagM = glm::translate(modelMatrix, glm::vec3(0.15f, 0.5f, 0.0f));
-    flagM = glm::scale(flagM, glm::vec3(0.5f, 0.3f, 1.0f));
+    glm::mat4 flagM = modelMatrix * makeTranslate(glm::vec3(0.15f, 0.5f, 0.0f));
+    flagM = flagM * makeScale(glm::vec3(0.5f, 0.3f, 1.0f));
     shader.setMat4("model", flagM);
     flag.draw();
 
@@ -198,8 +196,8 @@ void LightPole::draw(Shader &shader, glm::mat4 modelMatrix) {
     pole.draw();
 
     
-    glm::mat4 capM = glm::translate(modelMatrix, glm::vec3(0.0f, 3.1f, 0.1f));
-    capM = glm::rotate(capM, glm::radians(-15.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    glm::mat4 capM = modelMatrix * makeTranslate(glm::vec3(0.0f, 3.1f, 0.1f));
+    capM = capM * makeRotate(degToRad(-15.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     shader.setMat4("model", capM);
     cap.draw();
     shader.setInt("useTexture", 0);
@@ -225,43 +223,43 @@ void Windmill::draw(Shader &shader, glm::mat4 modelMatrix, float spinAngle) {
     bindTex(shader, TextureLoader::load("textures/wood.png"));
 
     
-    glm::mat4 bodyBotM = glm::translate(modelMatrix, glm::vec3(0.0f, -0.50f, 0.0f));
+    glm::mat4 bodyBotM = modelMatrix * makeTranslate(glm::vec3(0.0f, -0.50f, 0.0f));
     shader.setMat4("model", bodyBotM);
     bodyBot.draw();
 
-    glm::mat4 bodyMidM = glm::translate(modelMatrix, glm::vec3(0.0f, 0.50f, 0.0f));
+    glm::mat4 bodyMidM = modelMatrix * makeTranslate(glm::vec3(0.0f, 0.50f, 0.0f));
     shader.setMat4("model", bodyMidM);
     bodyMid.draw();
 
-    glm::mat4 bodyTopM = glm::translate(modelMatrix, glm::vec3(0.0f, 1.50f, 0.0f));
+    glm::mat4 bodyTopM = modelMatrix * makeTranslate(glm::vec3(0.0f, 1.50f, 0.0f));
     shader.setMat4("model", bodyTopM);
     bodyTop.draw();
 
     
-    glm::mat4 leftPillar = glm::translate(modelMatrix, glm::vec3(-0.27f, -2.00f, 0.0f));
+    glm::mat4 leftPillar = modelMatrix * makeTranslate(glm::vec3(-0.27f, -2.00f, 0.0f));
     shader.setMat4("model", leftPillar);
     baseLeft.draw();
 
-    glm::mat4 rightPillar = glm::translate(modelMatrix, glm::vec3(0.27f, -2.00f, 0.0f));
+    glm::mat4 rightPillar = modelMatrix * makeTranslate(glm::vec3(0.27f, -2.00f, 0.0f));
     shader.setMat4("model", rightPillar);
     baseRight.draw();
 
-    glm::mat4 lintel = glm::translate(modelMatrix, glm::vec3(0.0f, -1.60f, 0.0f));
+    glm::mat4 lintel = modelMatrix * makeTranslate(glm::vec3(0.0f, -1.60f, 0.0f));
     shader.setMat4("model", lintel);
     baseLintel.draw();
 
     
-    glm::mat4 roofM = glm::translate(modelMatrix, glm::vec3(0.0f, 2.00f, 0.0f));
+    glm::mat4 roofM = modelMatrix * makeTranslate(glm::vec3(0.0f, 2.00f, 0.0f));
     shader.setMat4("model", roofM);
     roof.draw();
 
     
-    glm::mat4 axleM = glm::translate(modelMatrix, glm::vec3(0.0f, 1.50f, 0.42f));
+    glm::mat4 axleM = modelMatrix * makeTranslate(glm::vec3(0.0f, 1.50f, 0.42f));
     shader.setMat4("model", axleM);
     bindTex(shader, TextureLoader::load("textures/metal.png"));
     axle.draw();
 
-    glm::mat4 hubM = glm::translate(modelMatrix, glm::vec3(0.0f, 1.50f, 0.42f));
+    glm::mat4 hubM = modelMatrix * makeTranslate(glm::vec3(0.0f, 1.50f, 0.42f));
     shader.setMat4("model", hubM);
     bindTex(shader, TextureLoader::load("textures/metal.png"));
     hub.draw();
@@ -270,8 +268,8 @@ void Windmill::draw(Shader &shader, glm::mat4 modelMatrix, float spinAngle) {
     const float PI = 3.14159265f;
     const float bladeAngles[4] = {PI * 0.25f, PI * 0.75f, PI * 1.25f, PI * 1.75f};
     for (int i = 0; i < 4; ++i) {
-        glm::mat4 bladeM = glm::translate(modelMatrix, glm::vec3(0.0f, 1.50f, 0.42f));
-        bladeM = glm::rotate(bladeM, glm::radians(spinAngle) + bladeAngles[i], glm::vec3(0.0f, 0.0f, 1.0f));
+        glm::mat4 bladeM = modelMatrix * makeTranslate(glm::vec3(0.0f, 1.50f, 0.42f));
+        bladeM = bladeM * makeRotate(degToRad(spinAngle) + bladeAngles[i], glm::vec3(0.0f, 0.0f, 1.0f));
         shader.setMat4("model", bladeM);
         bindTex(shader, TextureLoader::load("textures/wood.png"));
         blade.draw();

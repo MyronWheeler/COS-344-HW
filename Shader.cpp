@@ -1,7 +1,7 @@
 #include "Shader.h"
+#include "MathHelpers.h"
 
 #include <GL/glew.h>
-#include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 #include <stdio.h>
 
@@ -46,15 +46,15 @@ void Shader::setFloat(const std::string &name, float value) const {
 }
 
 void Shader::setVec3(const std::string &name, const glm::vec3 &value) const {
-    glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, glm::value_ptr(value));
+    glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, vec3Ptr(value));
 }
 
 void Shader::setVec4(const std::string &name, const glm::vec4 &value) const {
-    glUniform4fv(glGetUniformLocation(ID, name.c_str()), 1, glm::value_ptr(value));
+    glUniform4fv(glGetUniformLocation(ID, name.c_str()), 1, vec4Ptr(value));
 }
 
 void Shader::setMat4(const std::string &name, const glm::mat4 &value) const {
-    glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE,glm::value_ptr(value));
+    glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, mat4Ptr(value));
 }
 
 
