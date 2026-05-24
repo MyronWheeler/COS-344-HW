@@ -14,12 +14,12 @@
 #include "Mesh.h"
 #include "Camera.h"
 #include "Skybox.h"
-#include "Water.h"
 #include "Objects.h"
 #include "HoleConfig.h"
 #include "HoleFactory.h"
 #include "CourseData.h"
 #include "ShadowMap.h"
+#include "Drone.h"
 
 // ---- globals ---------------------------------------------------------------
 
@@ -35,7 +35,8 @@ static void keyCallback(GLFWwindow *window, int key, int /*sc*/, int action, int
 
     if (key == GLFW_KEY_P && action == GLFW_PRESS && g_camera) {
         glm::vec3 p = g_camera->getPosition();
-        std::cout << "Camera: (" << p.x << ", " << p.y << ", " << p.z << ")\n";
+        std::cout << "Drone position: ("
+                  << p.x << ", " << p.y << ", " << p.z << ")\n";
     }
 }
 
@@ -50,7 +51,7 @@ static void framebufferSizeCallback(GLFWwindow * /*w*/, int w, int h) {
 // ---- Light parameters for day / night modes --------------------------------
 
 struct LightMode {
-    glm::vec3 dir;    // direction light travels (toward scene, normalised)
+    glm::vec3 dir;   // direction light travels (toward scene, normalised)
     glm::vec3 color;
 };
 
@@ -65,59 +66,56 @@ static LightMode nightLight() {
 }
 
 // ---- Pole-light positions: ring around the 68×47 m course ------------------
-// Heights are at lamp-head height (Y = 6).  Positions chosen to give even
-// coverage without clustering on any one side.
 
 static const int   NUM_POLE_LIGHTS = 8;
 static const float POLE_Y          = 6.0f;
 
 static const glm::vec3 POLE_LIGHT_POS[NUM_POLE_LIGHTS] = {
-    {-30.0f, POLE_Y, -22.0f},   // NW corner
-    {  0.0f, POLE_Y, -22.0f},   // N centre
-    { 30.0f, POLE_Y, -22.0f},   // NE corner
-    { 34.0f, POLE_Y,   0.0f},   // E centre
-    { 30.0f, POLE_Y,  22.0f},   // SE corner
-    {  0.0f, POLE_Y,  22.0f},   // S centre
-    {-30.0f, POLE_Y,  22.0f},   // SW corner
-    {-34.0f, POLE_Y,   0.0f},   // W centre
+    {-30.0f, POLE_Y, -22.0f},
+    {  0.0f, POLE_Y, -22.0f},
+    { 30.0f, POLE_Y, -22.0f},
+    { 34.0f, POLE_Y,   0.0f},
+    { 30.0f, POLE_Y,  22.0f},
+    {  0.0f, POLE_Y,  22.0f},
+    {-30.0f, POLE_Y,  22.0f},
+    {-34.0f, POLE_Y,   0.0f},
 };
 
-// ---- Helper: apply all frame-constant uniforms to the main shader ----------
+// ---- Set all frame-constant uniforms on the main shader --------------------
 
-static void setMainShaderUniforms(Shader              &shader,
-                                  const glm::mat4     &view,
-                                  const glm::mat4     &projection,
-                                  const glm::mat4     &lsm,
-                                  const LightMode     &light,
-                                  const Camera        &camera,
-                                  bool                 isNight)
+static void setMainShaderUniforms(Shader          &shader,
+                                  const glm::mat4 &view,
+                                  const glm::mat4 &projection,
+                                  const glm::mat4 &lsm,
+                                  const LightMode &light,
+                                  const Camera    &camera,
+                                  bool             isNight)
 {
     shader.use();
-    shader.setMat4("view",            view);
-    shader.setMat4("projection",      projection);
-    shader.setMat4("lightSpaceMatrix",lsm);
-    shader.setInt ("shadowMap",       1);   // unit 1
-    shader.setInt ("objectTexture",   0);   // unit 0
-    shader.setInt ("useTexture",      0);
+    shader.setMat4 ("view",             view);
+    shader.setMat4 ("projection",       projection);
+    shader.setMat4 ("lightSpaceMatrix", lsm);
+    shader.setInt  ("shadowMap",        1);   // unit 1
+    shader.setInt  ("objectTexture",    0);   // unit 0
+    shader.setInt  ("useTexture",       0);
+    shader.setFloat("objectAlpha",      1.0f);
 
     shader.setVec3("dirLightDirection", light.dir);
     shader.setVec3("dirLightColor",     light.color);
     shader.setVec3("viewPos",           camera.getPosition());
     shader.setInt ("isNight",           isNight ? 1 : 0);
 
-    // Point lights (active in night mode; colour is zero in day so no cost)
     glm::vec3 plColor = isNight
-        ? glm::vec3(1.0f, 0.72f, 0.30f)   // warm orange lamp glow
+        ? glm::vec3(1.0f, 0.72f, 0.30f)
         : glm::vec3(0.0f);
-    shader.setVec3("pointLightColor",  plColor);
-    shader.setInt ("numPointLights",   NUM_POLE_LIGHTS);
+    shader.setVec3("pointLightColor", plColor);
+    shader.setInt ("numPointLights",  NUM_POLE_LIGHTS);
     for (int i = 0; i < NUM_POLE_LIGHTS; ++i) {
         std::ostringstream oss;
         oss << "pointLightPositions[" << i << "]";
         shader.setVec3(oss.str(), POLE_LIGHT_POS[i]);
     }
 
-    // Drone spotlight
     shader.setInt  ("spotlightOn",          camera.spotlightOn ? 1 : 0);
     shader.setVec3 ("spotlightPos",         camera.getSpotlightPosition());
     shader.setVec3 ("spotlightDir",         camera.getSpotlightDirection());
@@ -143,8 +141,8 @@ int main() {
     }
 
     glfwMakeContextCurrent(window);
-    glfwSetKeyCallback(window, keyCallback);
-    glfwSetScrollCallback(window, scrollCallback);
+    glfwSetKeyCallback            (window, keyCallback);
+    glfwSetScrollCallback         (window, scrollCallback);
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
     glewExperimental = GL_TRUE;
@@ -158,34 +156,34 @@ int main() {
     glEnable(GL_CULL_FACE);
     glViewport(0, 0, 1280, 720);
 
-    // ---- Camera -------------------------------------------------------------
+    // ---- Camera / drone controller -----------------------------------------
     Camera camera(glm::vec3(0.0f, 25.0f, 40.0f));
     g_camera = &camera;
 
     std::cout <<
         "\n=== The Vines Mini Golf — Controls ===\n"
-        "  WASD        - move forward / back / left / right\n"
-        "  Space/Shift - ascend / descend\n"
-        "  Arrow keys  - look around\n"
-        "  Scroll      - adjust movement speed\n"
-        "  N           - toggle day / night\n"
-        "  F           - toggle drone spotlight\n"
-        "  P           - print camera position\n"
-        "  ESC         - quit\n"
+        "  WASD          move forward / back / strafe\n"
+        "  Space / Shift ascend / descend\n"
+        "  Arrow keys    look around\n"
+        "  Scroll        adjust movement speed\n"
+        "  N             toggle day / night\n"
+        "  F             toggle drone spotlight\n"
+        "  P             print drone position\n"
+        "  ESC           quit\n"
         "======================================\n\n";
 
-    // ---- Shaders ------------------------------------------------------------
+    // ---- Shaders -----------------------------------------------------------
     Shader mainShader  ("shaders/main.vert",   "shaders/main.frag");
     Shader shadowShader("shaders/shadow.vert", "shaders/shadow.frag");
     Shader skyShader   ("shaders/skybox.vert", "shaders/skybox.frag");
-    Shader waterShader ("shaders/water.vert",  "shaders/water.frag");
 
-    // ---- Shadow map ---------------------------------------------------------
+    // ---- Shadow map --------------------------------------------------------
     ShadowMap shadowMap;
 
-    // ---- Scene objects ------------------------------------------------------
+    // ---- Scene objects -----------------------------------------------------
     Skybox skybox;
-    Water  courseStream(4.0f, 47.0f, glm::vec3(32.0f, 0.0f, 0.0f));
+    Drone  drone;
+    Mesh   groundPlane = Mesh::createPlane(160.0f, 120.0f, 2, 2);
 
     std::vector<HoleConfig> configs = buildCourseData();
     std::vector<HoleNode>   holes;
@@ -193,26 +191,23 @@ int main() {
     for (const auto &cfg : configs)
         holes.push_back(HoleFactory::build(cfg));
 
-    Rock      rock1(glm::vec3(1.2f, 0.9f, 1.4f));
-    Barrel    barrel1(false);
-    Billboard sign1("textures/billboard.png", camera.getPosition());
+    // ---- Per-frame state ---------------------------------------------------
+    float windmillSpin = 0.0f;
+    float rotorSpin    = 0.0f;
+    float lastTime     = static_cast<float>(glfwGetTime());
 
-    glm::vec3 hole1World = configs[0].position;
-    glm::mat4 rockM   = glm::translate(glm::mat4(1.0f), hole1World + glm::vec3(-2.0f, 0.4f, -1.0f));
-    glm::mat4 barrelM = glm::translate(glm::mat4(1.0f), hole1World + glm::vec3( 2.0f, 0.35f, 0.0f));
-
-    float lastTime = static_cast<float>(glfwGetTime());
-
-    // ---- Render loop --------------------------------------------------------
+    // ---- Render loop -------------------------------------------------------
     while (!glfwWindowShouldClose(window)) {
         float now = static_cast<float>(glfwGetTime());
         float dt  = now - lastTime;
         lastTime  = now;
 
-        camera.processKeyboard(window, dt);
-        sign1.updateCamera(camera.getPosition());
+        // --- Per-frame updates
+        windmillSpin += 720.0f * dt;
+        rotorSpin    += 720.0f * dt;
 
-        // N — day/night toggle (debounced)
+        camera.processKeyboard(window, dt);
+
         bool nDown = (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS);
         if (nDown && !g_nWasPressed) {
             g_isNight = !g_isNight;
@@ -226,7 +221,8 @@ int main() {
 
         glm::mat4 view       = camera.getViewMatrix();
         glm::mat4 projection = camera.getProjectionMatrix(aspect);
-        glm::vec3 viewPos    = camera.getPosition();
+        glm::vec3 camPos     = camera.getPosition();
+        glm::vec3 camFront   = camera.getFront();
 
         LightMode light = g_isNight ? nightLight() : dayLight();
         glm::mat4 lsm   = shadowMap.getLightSpaceMatrix(light.dir, glm::vec3(0.0f));
@@ -235,18 +231,16 @@ int main() {
         // PASS 1 — shadow depth map
         // ================================================================
         shadowMap.beginShadowPass();
-
         shadowShader.use();
         shadowShader.setMat4("lightSpaceMatrix", lsm);
 
-        // Course geometry
-        for (auto &hole : holes)
-            hole.draw(shadowShader);
+        shadowShader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f)));
+        groundPlane.draw();
 
-        // Test objects (billboard excluded — orientation meaningless for shadow)
-        shadowShader.setVec3("objectColor", glm::vec3(1.0f));
-        rock1.draw(shadowShader, rockM);
-        barrel1.draw(shadowShader, barrelM);
+        for (auto &hole : holes)
+            hole.draw(shadowShader, windmillSpin);
+
+        drone.draw(shadowShader, camPos, camFront, rotorSpin);
 
         shadowMap.endShadowPass();
 
@@ -257,43 +251,38 @@ int main() {
         glClearColor(0.05f, 0.07f, 0.10f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Skybox (no depth write, drawn first)
+        // Skybox — no depth write, rendered before everything else
         glDepthMask(GL_FALSE);
         skybox.draw(skyShader, view, projection);
         glDepthMask(GL_TRUE);
 
-        // Bind shadow map to texture unit 1 (stays bound for all main draws)
+        // Bind shadow map to texture unit 1 (stays for all main-shader draws)
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, shadowMap.getDepthTexture());
 
-        // Frame-constant main-shader uniforms
+        // Set all frame-constant uniforms once
         setMainShaderUniforms(mainShader, view, projection, lsm,
                               light, camera, g_isNight);
 
-        // All 18 holes
+        // Ground plane — drawn before holes so holes sit on top
+        mainShader.setInt ("useTexture",  0);
+        mainShader.setVec3("objectColor", glm::vec3(0.08f, 0.28f, 0.05f));
+        mainShader.setMat4("model",       glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f)));
+        groundPlane.draw();
+
+        mainShader.setInt ("useTexture",  0);
+        mainShader.setVec3("objectColor", glm::vec3(0.13f, 0.55f, 0.13f));
+
+        // All 18 holes (terrain, streams, ponds, bridges, windmill, obstacles)
         for (auto &hole : holes)
-            hole.draw(mainShader);
+            hole.draw(mainShader, windmillSpin);
 
-        // Test objects near hole 1
-        mainShader.setInt("useTexture", 0);
-        mainShader.setVec3("objectColor", glm::vec3(0.55f, 0.50f, 0.45f));
-        rock1.draw(mainShader, rockM);
+        // Drone model
+        drone.draw(mainShader, camPos, camFront, rotorSpin);
 
-        mainShader.setVec3("objectColor", glm::vec3(0.60f, 0.40f, 0.20f));
-        barrel1.draw(mainShader, barrelM);
-
-        mainShader.setVec3("objectColor", glm::vec3(1.0f));
-        {
-            glm::mat4 signM = glm::translate(glm::mat4(1.0f),
-                                             hole1World + glm::vec3(0.0f, 1.0f, -3.5f));
-            signM = glm::scale(signM, glm::vec3(2.0f));
-            sign1.draw(mainShader, signM);
-        }
-
-        // Water (alpha-blended, drawn last; uses its own shader)
-        courseStream.draw(waterShader, now, view, projection,
-                         glm::vec3(0.0f) - light.dir * 50.0f,  // light world pos
-                         viewPos);
+        // Spotlight cone — transparent overlay, only when spotlight is active
+        if (camera.spotlightOn)
+            drone.drawSpotlightCone(mainShader, camPos);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

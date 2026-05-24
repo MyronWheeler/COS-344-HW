@@ -7,7 +7,7 @@
 #include <cmath>
 
 static glm::vec3 computeNormal(glm::vec3 a, glm::vec3 b, glm::vec3 c) {
-    return glm::normalize(glm::cross(b - a, c - a));
+    return glm::normalize(glm::cross(c - a, b - a));
 }
 
 static std::vector<glm::vec2> offsetPolygon(const std::vector<glm::vec2> &pts, float amount) {
@@ -47,7 +47,7 @@ Mesh Terrain::buildFairway(const std::vector<glm::vec2> &boundary,
     centroid2 /= static_cast<float>(n);
     centroidY /= static_cast<float>(n);
 
-    glm::vec3 centroid3(centroid2.x, centroidY, centroid2.y);
+    glm::vec3 centroid3(centroid2.x, centroidY + 0.1f, centroid2.y);
 
     Vertex cv;
     cv.position = centroid3;
@@ -57,7 +57,7 @@ Mesh Terrain::buildFairway(const std::vector<glm::vec2> &boundary,
 
     for (size_t i = 0; i < n; ++i) {
         Vertex v;
-        v.position = glm::vec3(boundary[i].x, elevations[i], boundary[i].y);
+        v.position = glm::vec3(boundary[i].x, elevations[i] + 0.1f, boundary[i].y);
         v.normal   = glm::vec3(0, 1, 0);
         v.texcoord = glm::vec2((boundary[i].x - centroid2.x) * 0.1f + 0.5f,
                                (boundary[i].y - centroid2.y) * 0.1f + 0.5f);
@@ -74,6 +74,9 @@ Mesh Terrain::buildFairway(const std::vector<glm::vec2> &boundary,
         verts[c].normal = glm::normalize(verts[c].normal + norm);
         idx.push_back(a); idx.push_back(b); idx.push_back(c);
     }
+
+    for (auto &v : verts)
+        if (v.normal.y < 0.0f) v.normal *= -1.0f;
 
     return Mesh(verts, idx);
 }
@@ -109,6 +112,9 @@ Mesh Terrain::buildSurround(const std::vector<glm::vec2> &boundary, float minEle
         idx.push_back(i1); idx.push_back(i2); idx.push_back(i3);
     }
 
+    for (auto &v : verts)
+        if (v.normal.y < 0.0f) v.normal *= -1.0f;
+
     return Mesh(verts, idx);
 }
 
@@ -128,17 +134,14 @@ Terrain::Terrain(const std::vector<glm::vec2> &boundary,
 
 void Terrain::draw(Shader &shader, glm::mat4 worldTransform) {
     shader.use();
-
     shader.setMat4("model", worldTransform);
-    shader.setVec3("objectColor", glm::vec3(0.13f, 0.55f, 0.13f));
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, TextureLoader::load("textures/grass.png"));
-    shader.setInt("objectTexture", 0);
-    shader.setInt("useTexture", 1);
+    // Fairway — solid vivid green (no texture dependency)
+    shader.setInt ("useTexture",   0);
+    shader.setVec3("objectColor",  glm::vec3(0.20f, 0.80f, 0.20f));
     fairway.draw();
 
-    shader.setVec3("objectColor", glm::vec3(0.55f, 0.50f, 0.40f));
-    glBindTexture(GL_TEXTURE_2D, TextureLoader::load("textures/gravel.png"));
+    // Surround — solid red-brown (no texture dependency)
+    shader.setInt ("useTexture",   0);
+    shader.setVec3("objectColor",  glm::vec3(0.60f, 0.22f, 0.06f));
     surround.draw();
-    shader.setInt("useTexture", 0);
 }

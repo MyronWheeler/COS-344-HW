@@ -9,6 +9,7 @@ out vec4 FragColor;
 
 // ---- Material ---------------------------------------------------------------
 uniform vec3      objectColor;
+uniform float     objectAlpha;
 uniform sampler2D objectTexture;
 uniform bool      useTexture;
 
@@ -140,5 +141,5 @@ void main() {
     if (spotlightOn)
         result += calcSpotlight(norm, viewDir, base);
 
-    FragColor = vec4(result, 1.0);
+    FragColor = vec4(result, objectAlpha);
 }

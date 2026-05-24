@@ -4,7 +4,6 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <string>
 
 // Helper: set common shader uniforms and bind a texture to unit 0
 static void bindTex(Shader &shader, GLuint tex) {
@@ -267,7 +266,7 @@ void Windmill::draw(Shader &shader, glm::mat4 modelMatrix, float spinAngle) {
     const float bladeAngles[4] = {PI * 0.25f, PI * 0.75f, PI * 1.25f, PI * 1.75f};
     for (int i = 0; i < 4; ++i) {
         glm::mat4 bladeM = glm::translate(modelMatrix, glm::vec3(0.0f, 1.50f, 0.42f));
-        bladeM = glm::rotate(bladeM, spinAngle + bladeAngles[i], glm::vec3(0.0f, 0.0f, 1.0f));
+        bladeM = glm::rotate(bladeM, glm::radians(spinAngle) + bladeAngles[i], glm::vec3(0.0f, 0.0f, 1.0f));
         shader.setMat4("model", bladeM);
         bindTex(shader, TextureLoader::load("textures/wood.png"));
         blade.draw();
