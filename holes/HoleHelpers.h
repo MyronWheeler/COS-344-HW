@@ -1,6 +1,6 @@
 #pragma once
 
-#include "HoleConfig.h"
+#include "../HoleConfig.h"
 #include <cmath>
 #include <vector>
 
