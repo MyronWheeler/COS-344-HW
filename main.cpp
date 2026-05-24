@@ -234,7 +234,7 @@ int main() {
         shadowShader.use();
         shadowShader.setMat4("lightSpaceMatrix", lsm);
 
-        shadowShader.setMat4("model", glm::mat4(1.0f));
+        shadowShader.setMat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f)));
         groundPlane.draw();
 
         for (auto &hole : holes)
@@ -266,9 +266,12 @@ int main() {
 
         // Ground plane — drawn before holes so holes sit on top
         mainShader.setInt ("useTexture",  0);
-        mainShader.setVec3("objectColor", glm::vec3(0.18f, 0.45f, 0.10f));
-        mainShader.setMat4("model",       glm::mat4(1.0f));
+        mainShader.setVec3("objectColor", glm::vec3(0.08f, 0.28f, 0.05f));
+        mainShader.setMat4("model",       glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f)));
         groundPlane.draw();
+
+        mainShader.setInt ("useTexture",  0);
+        mainShader.setVec3("objectColor", glm::vec3(0.13f, 0.55f, 0.13f));
 
         // All 18 holes (terrain, streams, ponds, bridges, windmill, obstacles)
         for (auto &hole : holes)
