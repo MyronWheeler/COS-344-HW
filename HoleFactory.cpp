@@ -132,4 +132,45 @@ void HoleNode::draw(Shader &shader, float spinAngle) {
 
     if (hasWindmill && windmill)
         windmill->draw(shader, worldTransform * windmillTransform, spinAngle);
+
+    // Draw placed obstacles and decor
+    {
+        static Mesh s_rock     = Mesh::createSphere(0.5f, 12);
+        static Mesh s_barrel   = Mesh::createCylinder(0.35f, 0.7f, 16);
+        static Mesh s_bunker   = Mesh::createCylinder(1.0f, 0.15f, 20);
+        static Mesh s_plank    = Mesh::createBox(2.0f, 0.1f, 0.3f);
+        static Mesh s_fallback = Mesh::createBox(0.5f, 0.5f, 0.5f);
+        static FlagPole s_flag;
+
+        for (int pass = 0; pass < 2; ++pass) {
+            const std::vector<PlacedObject> &list = (pass == 0) ? obstacles : decor;
+            for (const auto &po : list) {
+                glm::mat4 m = worldTransform * po.transform;
+                shader.setInt("useTexture", 0);
+                if (po.type == "Rock") {
+                    shader.setVec3("objectColor", glm::vec3(0.50f, 0.45f, 0.40f));
+                    shader.setMat4("model", m);
+                    s_rock.draw();
+                } else if (po.type == "Barrel") {
+                    shader.setVec3("objectColor", glm::vec3(0.40f, 0.25f, 0.10f));
+                    shader.setMat4("model", m);
+                    s_barrel.draw();
+                } else if (po.type == "Bunker") {
+                    shader.setVec3("objectColor", glm::vec3(0.85f, 0.75f, 0.50f));
+                    shader.setMat4("model", m);
+                    s_bunker.draw();
+                } else if (po.type == "Plank") {
+                    shader.setVec3("objectColor", glm::vec3(0.50f, 0.35f, 0.15f));
+                    shader.setMat4("model", m);
+                    s_plank.draw();
+                } else if (po.type == "FlagPole") {
+                    s_flag.draw(shader, m);
+                } else {
+                    shader.setVec3("objectColor", glm::vec3(0.50f, 0.50f, 0.50f));
+                    shader.setMat4("model", m);
+                    s_fallback.draw();
+                }
+            }
+        }
+    }
 }
