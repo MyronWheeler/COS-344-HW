@@ -100,12 +100,21 @@ private:
 };
 
 // ---------------------------------------------------------------------------
-// Windmill — placeholder; Member 2 will implement internals
+// Windmill — Prac 3-style windmill with rotating blades
 // ---------------------------------------------------------------------------
 class Windmill {
 public:
     Windmill();
-    void draw(Shader &shader, glm::mat4 modelMatrix);
+    void draw(Shader &shader, glm::mat4 modelMatrix, float spinAngle);
 private:
-    Mesh body;
+    Mesh bodyTop;
+    Mesh bodyMid;
+    Mesh bodyBot;
+    Mesh baseLeft;
+    Mesh baseRight;
+    Mesh baseLintel;
+    Mesh roof;
+    Mesh axle;
+    Mesh hub;
+    Mesh blade;
 };

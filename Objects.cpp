@@ -201,15 +201,75 @@ void LightPole::draw(Shader &shader, glm::mat4 modelMatrix) {
     cap.draw();
 }
 
-// ---- Windmill (placeholder) ------------------------------------------------
+// ---- Windmill --------------------------------------------------------------
 
 Windmill::Windmill()
-    : body(Mesh::createBox(2.0f, 4.0f, 2.0f))
+    : bodyTop(Mesh::createBox(0.70f, 1.00f, 0.70f))
+    , bodyMid(Mesh::createBox(0.85f, 1.00f, 0.85f))
+    , bodyBot(Mesh::createBox(1.00f, 1.00f, 1.00f))
+    , baseLeft(Mesh::createBox(0.36f, 0.80f, 1.20f))
+    , baseRight(Mesh::createBox(0.36f, 0.80f, 1.20f))
+    , baseLintel(Mesh::createBox(1.20f, 0.20f, 1.20f))
+    , roof(Mesh::createTriangularPrism(0.70f, 0.55f, 0.70f))
+    , axle(Mesh::createCylinder(0.05f, 0.35f, 16))
+    , hub(Mesh::createBox(0.15f, 0.15f, 0.12f))
+    , blade(Mesh::createBox(3.00f, 0.10f, 0.06f))
 {}
 
-void Windmill::draw(Shader &shader, glm::mat4 modelMatrix) {
+void Windmill::draw(Shader &shader, glm::mat4 modelMatrix, float spinAngle) {
     shader.use();
-    shader.setMat4("model", modelMatrix);
     bindTex(shader, TextureLoader::load("textures/wood.png"));
-    body.draw();
+
+    // Main tower body, matching the Prac 3 stacked-box windmill shape.
+    glm::mat4 bodyBotM = glm::translate(modelMatrix, glm::vec3(0.0f, -0.50f, 0.0f));
+    shader.setMat4("model", bodyBotM);
+    bodyBot.draw();
+
+    glm::mat4 bodyMidM = glm::translate(modelMatrix, glm::vec3(0.0f, 0.50f, 0.0f));
+    shader.setMat4("model", bodyMidM);
+    bodyMid.draw();
+
+    glm::mat4 bodyTopM = glm::translate(modelMatrix, glm::vec3(0.0f, 1.50f, 0.0f));
+    shader.setMat4("model", bodyTopM);
+    bodyTop.draw();
+
+    // Base pillars and lintel.
+    glm::mat4 leftPillar = glm::translate(modelMatrix, glm::vec3(-0.27f, -2.00f, 0.0f));
+    shader.setMat4("model", leftPillar);
+    baseLeft.draw();
+
+    glm::mat4 rightPillar = glm::translate(modelMatrix, glm::vec3(0.27f, -2.00f, 0.0f));
+    shader.setMat4("model", rightPillar);
+    baseRight.draw();
+
+    glm::mat4 lintel = glm::translate(modelMatrix, glm::vec3(0.0f, -1.60f, 0.0f));
+    shader.setMat4("model", lintel);
+    baseLintel.draw();
+
+    // Roof.
+    glm::mat4 roofM = glm::translate(modelMatrix, glm::vec3(0.0f, 2.00f, 0.0f));
+    shader.setMat4("model", roofM);
+    roof.draw();
+
+    // Axle and hub.
+    glm::mat4 axleM = glm::translate(modelMatrix, glm::vec3(0.0f, 1.50f, 0.42f));
+    shader.setMat4("model", axleM);
+    bindTex(shader, TextureLoader::load("textures/metal.png"));
+    axle.draw();
+
+    glm::mat4 hubM = glm::translate(modelMatrix, glm::vec3(0.0f, 1.50f, 0.42f));
+    shader.setMat4("model", hubM);
+    bindTex(shader, TextureLoader::load("textures/metal.png"));
+    hub.draw();
+
+    // Four blades, rotated by the supplied spin angle.
+    const float PI = 3.14159265f;
+    const float bladeAngles[4] = {PI * 0.25f, PI * 0.75f, PI * 1.25f, PI * 1.75f};
+    for (int i = 0; i < 4; ++i) {
+        glm::mat4 bladeM = glm::translate(modelMatrix, glm::vec3(0.0f, 1.50f, 0.42f));
+        bladeM = glm::rotate(bladeM, spinAngle + bladeAngles[i], glm::vec3(0.0f, 0.0f, 1.0f));
+        shader.setMat4("model", bladeM);
+        bindTex(shader, TextureLoader::load("textures/wood.png"));
+        blade.draw();
+    }
 }
