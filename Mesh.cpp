@@ -6,7 +6,8 @@
 static const float PI = 3.14159265358979323846f;
 
 Mesh::Mesh(const std::vector<Vertex> &vertices, const std::vector<unsigned int> &indices)
-    : indexCount(static_cast<unsigned int>(indices.size())) {
+    : indexCount(static_cast<unsigned int>(indices.size()))
+{
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
@@ -14,19 +15,27 @@ Mesh::Mesh(const std::vector<Vertex> &vertices, const std::vector<unsigned int> 
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(vertices.size() * sizeof(Vertex)), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER,
+                 static_cast<GLsizeiptr>(vertices.size() * sizeof(Vertex)),
+                 vertices.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(indices.size() * sizeof(unsigned int)), indices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 static_cast<GLsizeiptr>(indices.size() * sizeof(unsigned int)),
+                 indices.data(), GL_STATIC_DRAW);
 
+    // position
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, position)));
-  
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          reinterpret_cast<void*>(offsetof(Vertex, position)));
+    // normal
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, normal)));
-
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          reinterpret_cast<void*>(offsetof(Vertex, normal)));
+    // texcoord
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, texcoord)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          reinterpret_cast<void*>(offsetof(Vertex, texcoord)));
 
     glBindVertexArray(0);
 }
@@ -56,7 +65,7 @@ Mesh Mesh::createPlane(float width, float depth, int subdivisionsX, int subdivis
             float fz = static_cast<float>(z) / subdivisionsZ;
             Vertex v;
             v.position  = glm::vec3((fx - 0.5f) * width, 0.0f, (fz - 0.5f) * depth);
-            v.normal = glm::vec3(0.0f, 1.0f, 0.0f);
+            v.normal    = glm::vec3(0.0f, 1.0f, 0.0f);
             v.texcoord  = glm::vec2(fx, fz);
             verts.push_back(v);
         }
@@ -79,6 +88,7 @@ Mesh Mesh::createPlane(float width, float depth, int subdivisionsX, int subdivis
 Mesh Mesh::createBox(float w, float h, float d) {
     float hw = w * 0.5f, hh = h * 0.5f, hd = d * 0.5f;
 
+    // 6 faces × 4 vertices
     std::vector<Vertex> verts;
     std::vector<unsigned int> idx;
 
@@ -88,60 +98,22 @@ Mesh Mesh::createBox(float w, float h, float d) {
         verts.push_back({p1, n, glm::vec2(1, 0)});
         verts.push_back({p2, n, glm::vec2(1, 1)});
         verts.push_back({p3, n, glm::vec2(0, 1)});
-        idx.push_back(base);
-        idx.push_back(base + 1);
-        idx.push_back(base + 2);
-        idx.push_back(base);
-        idx.push_back(base + 2); idx.push_back(base + 3);
+        idx.push_back(base);     idx.push_back(base + 1); idx.push_back(base + 2);
+        idx.push_back(base);     idx.push_back(base + 2); idx.push_back(base + 3);
     };
 
-    addFace(
-        {-hw, hh, -hd},
-        {-hw, hh,  hd},
-        { hw, hh,  hd},
-        { hw, hh, -hd},
-        { 0, 1, 0}
-    );
-
-    addFace(
-        {-hw,-hh,  hd},
-        { hw,-hh,  hd},
-        { hw,-hh, -hd},
-        {-hw,-hh, -hd},
-        { 0,-1, 0}
-    );
-
-    addFace(
-        {-hw,-hh,  hd}, 
-        { hw,-hh,  hd}, 
-        { hw, hh,  hd}, 
-        {-hw, hh,  hd}, 
-        { 0, 0, 1}
-    );
-
-    addFace(
-        { hw,-hh, -hd}, 
-        {-hw,-hh, -hd}, 
-        {-hw, hh, -hd}, 
-        { hw, hh, -hd}, 
-        { 0, 0,-1}
-    );
-
-    addFace(
-        { hw,-hh,  hd}, 
-        { hw,-hh, -hd}, 
-        { hw, hh, -hd}, 
-        { hw, hh,  hd}, 
-        { 1, 0, 0}
-    );
-
-    addFace(
-        {-hw,-hh, -hd},
-        {-hw,-hh,  hd},
-        {-hw, hh,  hd}, 
-        {-hw, hh, -hd}, 
-        {-1, 0, 0}
-    );
+    // +Y top — CCW from above so the face is not culled when viewed from above
+    addFace({-hw, hh, -hd}, {-hw, hh,  hd}, { hw, hh,  hd}, { hw, hh, -hd}, { 0, 1, 0});
+    // -Y bottom
+    addFace({-hw,-hh,  hd}, { hw,-hh,  hd}, { hw,-hh, -hd}, {-hw,-hh, -hd}, { 0,-1, 0});
+    // +Z front
+    addFace({-hw,-hh,  hd}, { hw,-hh,  hd}, { hw, hh,  hd}, {-hw, hh,  hd}, { 0, 0, 1});
+    // -Z back
+    addFace({ hw,-hh, -hd}, {-hw,-hh, -hd}, {-hw, hh, -hd}, { hw, hh, -hd}, { 0, 0,-1});
+    // +X right
+    addFace({ hw,-hh,  hd}, { hw,-hh, -hd}, { hw, hh, -hd}, { hw, hh,  hd}, { 1, 0, 0});
+    // -X left
+    addFace({-hw,-hh, -hd}, {-hw,-hh,  hd}, {-hw, hh,  hd}, {-hw, hh, -hd}, {-1, 0, 0});
 
     return Mesh(verts, idx);
 }
@@ -152,6 +124,7 @@ Mesh Mesh::createCylinder(float radius, float height, int segments) {
 
     float hh = height * 0.5f;
 
+    // Side vertices: two rings
     for (int i = 0; i <= segments; ++i) {
         float angle = 2.0f * PI * static_cast<float>(i) / segments;
         float cx = cosf(angle), cz = sinf(angle);
@@ -160,18 +133,18 @@ Mesh Mesh::createCylinder(float radius, float height, int segments) {
 
         Vertex bot, top;
         bot.position = glm::vec3(cx * radius, -hh, cz * radius);
-        bot.normal = n;
+        bot.normal   = n;
         bot.texcoord = glm::vec2(u, 0.0f);
 
         top.position = glm::vec3(cx * radius,  hh, cz * radius);
-        top.normal = n;
+        top.normal   = n;
         top.texcoord = glm::vec2(u, 1.0f);
 
         verts.push_back(bot);
         verts.push_back(top);
     }
 
-
+    // Side indices
     for (int i = 0; i < segments; ++i) {
         unsigned int b0 = static_cast<unsigned int>(i * 2);
         unsigned int t0 = b0 + 1;
@@ -189,7 +162,8 @@ Mesh Mesh::createCylinder(float radius, float height, int segments) {
         for (int i = 0; i <= segments; ++i) {
             float angle = 2.0f * PI * static_cast<float>(i) / segments;
             float cx = cosf(angle), cz = sinf(angle);
-            verts.push_back({{cx * radius, y, cz * radius}, n, {cx * 0.5f + 0.5f, cz * 0.5f + 0.5f}});
+            verts.push_back({{cx * radius, y, cz * radius}, n,
+                              {cx * 0.5f + 0.5f, cz * 0.5f + 0.5f}});
         }
 
         for (int i = 0; i < segments; ++i) {
@@ -229,7 +203,7 @@ Mesh Mesh::createSphere(float radius, int segments) {
             glm::vec3 n(sp * ct, cp, sp * st);
             Vertex vert;
             vert.position = n * radius;
-            vert.normal = n;
+            vert.normal   = n;
             vert.texcoord = glm::vec2(u, v);
             verts.push_back(vert);
         }
@@ -272,27 +246,21 @@ Mesh Mesh::createTriangularPrism(float w, float h, float d) {
         verts.push_back({p1, n, {1.0f, 0.0f}});
         verts.push_back({p2, n, {1.0f, 1.0f}});
         verts.push_back({p3, n, {0.0f, 1.0f}});
-        idx2.push_back(base);
-        idx2.push_back(base + 1); 
-        idx2.push_back(base + 2);
-        idx2.push_back(base);     
-        idx2.push_back(base + 2); 
-        idx2.push_back(base + 3);
+        idx2.push_back(base);     idx2.push_back(base + 1); idx2.push_back(base + 2);
+        idx2.push_back(base);     idx2.push_back(base + 2); idx2.push_back(base + 3);
     };
     auto addTri = [&](glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 n) {
         unsigned int base = static_cast<unsigned int>(verts.size());
         verts.push_back({p0, n, {0.5f, 0.0f}});
         verts.push_back({p1, n, {1.0f, 1.0f}});
         verts.push_back({p2, n, {0.0f, 1.0f}});
-        idx2.push_back(base); 
-        idx2.push_back(base + 1); 
-        idx2.push_back(base + 2);
+        idx2.push_back(base); idx2.push_back(base + 1); idx2.push_back(base + 2);
     };
 
     addQuad(BFL, BBL, TB,  TF,  nL);
     addQuad(BFR, TF,  TB,  BBR, nR);
-    addTri(BFL, TF,  BFR, glm::vec3( 0.0f,  0.0f, -1.0f));
-    addTri(BBR, TB,  BBL, glm::vec3( 0.0f,  0.0f,  1.0f));
+    addTri (BFL, TF,  BFR, glm::vec3( 0.0f,  0.0f, -1.0f));
+    addTri (BBR, TB,  BBL, glm::vec3( 0.0f,  0.0f,  1.0f));
     addQuad(BFL, BFR, BBR, BBL, glm::vec3( 0.0f, -1.0f,  0.0f));
 
     return Mesh(verts, idx2);

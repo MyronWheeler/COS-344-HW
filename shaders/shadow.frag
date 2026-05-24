@@ -1,5 +1,5 @@
 #version 330 core
 
-void main() {
-    
-}
+// Depth is written automatically by the fixed-function stage.
+// No colour output needed.
+void main() {}
