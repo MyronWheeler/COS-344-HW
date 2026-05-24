@@ -1,9 +1,9 @@
 CXX      = g++
-CXXFLAGS = -std=c++11 -Wall -Wextra -O2 -Isrc -Ivendor
+CXXFLAGS = -std=c++11 -Wall -Wextra -O2 -Ivendor
 LDFLAGS  = -lGL -lGLEW -lglfw -lm
 
 TARGET  = golf
-SRCS    = main.cpp $(wildcard src/*.cpp)
+SRCS    = $(wildcard *.cpp)
 OBJS    = $(SRCS:.cpp=.o)
 
 .PHONY: all clean

@@ -8,7 +8,6 @@ public:
     Camera(glm::vec3 startPosition);
 
     void processKeyboard(GLFWwindow *window, float deltaTime);
-    void processMouseMovement(float xoffset, float yoffset);
     void processMouseScroll(float yoffset);
 
     glm::mat4 getViewMatrix() const;
@@ -37,7 +36,7 @@ private:
     glm::vec3 velocity;         // current world-space velocity
     glm::vec3 targetVelocity;   // desired velocity this frame
     float     moveSpeed;        // base speed, scroll-adjustable
-    float     mouseSensitivity;
+    float     turnSpeed;        // degrees/second for arrow-key look
 
     // F key debounce
     bool fKeyWasPressed;

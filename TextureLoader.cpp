@@ -1,18 +1,20 @@
 #include "TextureLoader.h"
 
-// stb_image implementation compiled exactly once, here
 #define STB_IMAGE_IMPLEMENTATION
-#include "../vendor/stb_image.h"
+#include "vendor/stb_image.h"
 
+#include <GL/glew.h>
 #include <iostream>
-#include <unordered_map>
 
-static std::unordered_map<std::string, GLuint> g_cache;
+// Fixed-size linear-search cache — avoids <unordered_map>
+static const int MAX_CACHE = 128;
+struct TexEntry { std::string path; GLuint id; };
+static TexEntry g_cache[MAX_CACHE];
+static int      g_cacheSize = 0;
 
 GLuint TextureLoader::load(const std::string &path) {
-    auto it = g_cache.find(path);
-    if (it != g_cache.end())
-        return it->second;
+    for (int i = 0; i < g_cacheSize; ++i)
+        if (g_cache[i].path == path) return g_cache[i].id;
 
     stbi_set_flip_vertically_on_load(true);
 
@@ -22,7 +24,6 @@ GLuint TextureLoader::load(const std::string &path) {
     GLuint id = 0;
     if (!data) {
         std::cerr << "[TextureLoader] Failed to load: " << path << "\n";
-        // Return a 1×1 white fallback so the object still renders
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_2D, id);
         unsigned char white[4] = {255, 255, 255, 255};
@@ -33,7 +34,8 @@ GLuint TextureLoader::load(const std::string &path) {
         GLenum fmt = (channels == 4) ? GL_RGBA : (channels == 3) ? GL_RGB : GL_RED;
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_2D, id);
-        glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(fmt), w, h, 0, fmt, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(fmt), w, h,
+                     0, fmt, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,     GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,     GL_REPEAT);
@@ -42,7 +44,11 @@ GLuint TextureLoader::load(const std::string &path) {
         stbi_image_free(data);
     }
 
-    g_cache[path] = id;
+    if (g_cacheSize < MAX_CACHE) {
+        g_cache[g_cacheSize].path = path;
+        g_cache[g_cacheSize].id   = id;
+        ++g_cacheSize;
+    }
     return id;
 }
 
@@ -50,23 +56,21 @@ GLuint TextureLoader::loadCubemap(const std::string paths[6]) {
     GLuint id;
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_CUBE_MAP, id);
-
-    stbi_set_flip_vertically_on_load(false);  // cubemap faces must NOT be flipped
+    stbi_set_flip_vertically_on_load(false);
 
     for (int i = 0; i < 6; ++i) {
         int w, h, channels;
         unsigned char *data = stbi_load(paths[i].c_str(), &w, &h, &channels, 0);
         if (data) {
             GLenum fmt = (channels == 4) ? GL_RGBA : GL_RGB;
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                         0, static_cast<GLint>(fmt), w, h, 0, fmt, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
+                         static_cast<GLint>(fmt), w, h, 0, fmt, GL_UNSIGNED_BYTE, data);
             stbi_image_free(data);
         } else {
             std::cerr << "[TextureLoader] Cubemap face missing: " << paths[i] << "\n";
-            // 1×1 placeholder face
-            unsigned char col[3] = {100, 149, 237};  // cornflower blue
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                         0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, col);
+            unsigned char col[3] = {100, 149, 237};
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
+                         GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, col);
         }
     }
 
