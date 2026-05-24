@@ -10,19 +10,19 @@ struct Vertex {
 };
 
 class Mesh {
-public:
-    Mesh(const std::vector<Vertex> &vertices, const std::vector<unsigned int> &indices);
-    ~Mesh();
+    public:
+        Mesh(const std::vector<Vertex> &vertices, const std::vector<unsigned int> &indices);
+        ~Mesh();
 
-    void draw() const;
+        void draw() const;
 
-    static Mesh createPlane(float width, float depth, int subdivisionsX, int subdivisionsZ);
-    static Mesh createBox(float w, float h, float d);
-    static Mesh createCylinder(float radius, float height, int segments);
-    static Mesh createSphere(float radius, int segments);
-    static Mesh createTriangularPrism(float w, float h, float d);
+        static Mesh createPlane(float width, float depth, int subdivisionsX, int subdivisionsZ);
+        static Mesh createBox(float w, float h, float d);
+        static Mesh createCylinder(float radius, float height, int segments);
+        static Mesh createSphere(float radius, int segments);
+        static Mesh createTriangularPrism(float w, float h, float d);
 
-private:
-    unsigned int VAO, VBO, EBO;
-    unsigned int indexCount;
+    private:
+        unsigned int VAO, VBO, EBO;
+        unsigned int indexCount;
 };
